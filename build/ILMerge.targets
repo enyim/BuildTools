@@ -1,0 +1,90 @@
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Choose>
+		<When Condition=" '$(ILMergeEnabled)' == '' ">
+			<PropertyGroup>
+				<ILMergeEnabled>False</ILMergeEnabled>
+			</PropertyGroup>
+		</When>
+		<When Condition=" $(ILMergeEnabled) ">
+			<PropertyGroup>
+				<ILMergePath>"$(SolutionDir)\packages\ilmerge.2.14.1208\tools\ILMerge.exe"</ILMergePath>
+				<ResolveReferencesDependsOn>$(ResolveReferencesDependsOn);_FixReferences</ResolveReferencesDependsOn>
+				<BuildDependsOn>$(BuildDependsOn);_MergeAssemblies</BuildDependsOn>
+			</PropertyGroup>
+		</When>
+	</Choose>
+
+	<Target Name="_FixReferences">
+		<ItemGroup>
+			<!-- do not copy merged assemblies to the output dir -->
+			<ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition=" $([MSBuild]::ValueOrDefault(`%(ReferenceCopyLocalPaths.ILMerge)`, `False`)) " />
+			<ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition=" $([MSBuild]::ValueOrDefault(`%(ReferenceCopyLocalPaths.MergedSource)`, `False`)) " />
+			<!-- do not reference assemblies that have been merged in a referenced project -->
+			<ReferencePath Remove="@(ReferencePath)" Condition=" $([MSBuild]::ValueOrDefault(`%(ReferencePath.MergedSource)`, `False`)) " />
+			<!-- list assemblies to be merged into the main assembly -->
+			<SourceList Include="@(ReferencePath)" Condition=" '%(CopyLocal)' == 'true' And '%(ReferencePath.ILMerge)' == 'True' "/>
+		</ItemGroup>
+	</Target>
+
+	<Target Name="_MergeAssemblies" Condition=" '@(SourceList)' != '' ">
+		<Message Text="++ Merging @(SourceList -> '%(Filename)') into  $(TargetPath)" Importance="High" />
+
+		<!-- get path to the .net reference assemblies -->
+		<GetReferenceAssemblyPaths TargetFrameworkMoniker="$(TargetFrameworkMoniker)" RootPath="$(TargetFrameworkRootPath)">
+			<Output TaskParameter="ReferenceAssemblyPaths" PropertyName="_ReferenceAssemblies"/>
+			<Output TaskParameter="FullFrameworkReferenceAssemblyPaths" PropertyName="_FullFrameworkReferenceAssemblyPaths"/>
+			<Output TaskParameter="TargetFrameworkMonikerDisplayName" PropertyName="TargetFrameworkMonikerDisplayName" Condition="'$(TargetFrameworkMonikerDisplayName)' == ''"/>
+		</GetReferenceAssemblyPaths>
+
+		<!-- setup ILMerge parameters -->
+		<ItemGroup>
+			<ILMergeArgs Include="log" />
+			<ILMergeArgs Include="targetplatform">
+				<Value>v4,$(_ReferenceAssemblies.TrimEnd('\'))</Value>
+			</ILMergeArgs>
+			<ILMergeArgs Include="lib">
+				<Value>$(OutDir.TrimEnd('\'))</Value>
+			</ILMergeArgs>
+			<ILMergeArgs Include="out">
+				<Value>$(TargetPath)</Value>
+			</ILMergeArgs>
+			<ILMergeArgs Include="keyfile" Condition=" '$(AssemblyOriginatorKeyFile)' != '' ">
+				<Value>$(AssemblyOriginatorKeyFile)</Value>
+			</ILMergeArgs>
+		</ItemGroup>
+
+		<ItemGroup>
+			<Standalone Include="@(ILMergeArgs)" Condition=" '%(ILMergeArgs.Value)' == '' " />
+			<Quoted Include="@(ILMergeArgs)" Condition=" '%(ILMergeArgs.Value)' != '' " />
+		</ItemGroup>
+
+		<!-- generate command line -->
+		<PropertyGroup>
+			<_Exec>$(ILMergePath)</_Exec>
+			<_Exec>$(_Exec) @(Standalone -> '/%(Identity)', ' ')</_Exec>
+			<_Exec>$(_Exec) @(Quoted -> '/%(Identity):"%(Value)"', ' ')</_Exec>
+			<_Exec>$(_Exec) "@(IntermediateAssembly)"</_Exec>
+			<_Exec>$(_Exec) @(SourceList -> '"%(FullPath)"', ' ')</_Exec>
+		</PropertyGroup>
+
+		<Exec Command="$(_Exec)" StandardOutputImportance="normal" />
+	</Target>
+</Project>
+
+<!--
+
+	Copyright (c) Attila Kiskó, enyim.com
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+-->
