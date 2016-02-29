@@ -19,7 +19,7 @@ namespace Enyim.Build
 
 		public IEnumerable<Call> FindCalls(MethodDefinition method, Func<MethodReference, bool> filter = null)
 		{
-			var body = new ILAstBuilder().StackAnalysis(method, 0 != 0, new DecompilerContext(module) { CurrentMethod = method });
+			var body = new ILAstBuilder().StackAnalysis(method, false, new DecompilerContext(module) { CurrentMethod = method });
 			var ops = method.Body.Instructions.ToDictionary(i => i.Offset);
 			var calls = new List<CallGroup>();
 
@@ -32,10 +32,23 @@ namespace Enyim.Build
 					{
 						var slot = byteCode.StackBefore;
 
-						yield return new Call(ops[slot.Length == 0 ? byteCode.Offset : slot.SelectMany(s => s.Definitions).Min(def => def.Offset)], ops[byteCode.Offset]);
+						yield return new Call(ops[GetStartOfCallBlock(byteCode)], ops[byteCode.Offset]);
 					}
 				}
 			}
+		}
+
+		private static int GetStartOfCallBlock(ILAstBuilder.ByteCode bc)
+		{
+			var slot = bc.StackBefore;
+
+			while (slot.Length > 0)
+			{
+				bc = slot.SelectMany(s => s.Definitions).OrderBy(d => d.Offset).First();
+				slot = bc.StackBefore;
+			}
+
+			return bc.Offset;
 		}
 
 		public CallGroup[] CollapseBlocks(IEnumerable<Call> calls, IEqualityComparer<Instruction> callChecker)
@@ -107,11 +120,11 @@ namespace Enyim.Build
 			{
 				Start = start;
 				End = end;
-				Method = (MethodDefinition)end.Operand;
+				Method = (MethodReference)end.Operand;
 			}
 
 			public Instruction Start { get; private set; }
-			public MethodDefinition Method { get; private set; }
+			public MethodReference Method { get; private set; }
 			public Instruction End { get; private set; }
 		}
 	}

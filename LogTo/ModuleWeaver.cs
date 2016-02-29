@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
@@ -11,7 +13,7 @@ namespace Enyim.Build.Weavers.LogTo
 
 		public void Execute()
 		{
-			var logDef = new LogDefinition(this.ModuleDefinition);
+			var logDef = new LogDefinition(ModuleDefinition);
 			var info = LogInfo ?? (_ => { });
 
 			if (!logDef.IsValid)
@@ -20,9 +22,9 @@ namespace Enyim.Build.Weavers.LogTo
 			}
 			else
 			{
-				var types = from t in ModuleDefinition.Types
-							where t.IsClass && !t.IsAbstract && t.Name != "<Module>"
-							select t;
+				var types = (from t in ModuleDefinition.Types.IncludeNestedTypes()
+							 where t.IsClass && !t.IsAbstract && t.Name != "<Module>"
+							 select t).ToArray();
 
 				foreach (var typeDef in types)
 				{

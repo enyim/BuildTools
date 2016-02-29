@@ -29,7 +29,7 @@ namespace Enyim.Build.Weavers.LogTo
 			var methods = GetMethods().ToArray();
 			if (methods.Length == 0) return false;
 
-			var logger = this.logDef.DeclareLogger(this.typeDef);
+			var logger = logDef.DeclareLogger(this.typeDef);
 
 			foreach (var method in methods)
 			{

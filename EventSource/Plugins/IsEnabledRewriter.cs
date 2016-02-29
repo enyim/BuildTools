@@ -22,7 +22,7 @@ namespace Enyim.Build.Weavers.EventSource
 			var fixMap = Enumerable.ToDictionary(source, a => a.Old.FullName, a => a.New);
 			if (fixMap.Count == 0) return;
 
-			var allMethods = module.Types.SelectMany(t => t.Methods).Where(m => m.HasBody).ToArray();
+			var allMethods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
 
 			foreach (var method in allMethods)
 			{

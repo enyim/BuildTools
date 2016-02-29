@@ -10,7 +10,7 @@ namespace Enyim.Build
 {
 	public static class CecilExtensions
 	{
-		public static IEnumerable<TypeReference> TypesFromAnywhere(this ModuleDefinition module)
+		public static IEnumerable<TypeReference> IncludeReferencedTypes(this ModuleDefinition module)
 		{
 			return module.Types.Concat(module.GetTypeReferences());
 		}
@@ -292,10 +292,28 @@ namespace Enyim.Build
 			return retval;
 		}
 
-		//public static TypeReference GetEnumBaseType(this TypeDefinition self)
-		//{
-		//	return self.Fields.First(f => f.Name == "value__").FieldType;
-		//}
+		public static IEnumerable<TypeDefinition> IncludeNestedTypes(this IEnumerable<TypeDefinition> source)
+		{
+			return source.SelectMany(SelfAndNested);
+		}
+
+		private static IEnumerable<TypeDefinition> SelfAndNested(TypeDefinition type)
+		{
+			return type.Once().Concat(type.NestedTypes.SelectMany(SelfAndNested));
+		}
+	}
+
+	public static class WeaverHelpers
+	{
+		public static IEnumerable<MethodDefinition> AllMethods(ModuleDefinition module)
+		{
+			return module.Types.IncludeNestedTypes().SelectMany(t => t.Methods);
+		}
+
+		public static IEnumerable<MethodDefinition> AllMethodsWithBody(ModuleDefinition module)
+		{
+			return AllMethods(module).Where(m => m.HasBody);
+		}
 	}
 }
 

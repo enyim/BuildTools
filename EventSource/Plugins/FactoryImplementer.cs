@@ -11,14 +11,14 @@ namespace Enyim.Build.Weavers.EventSource
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
 		{
-			var factory = module.TypesFromAnywhere().FirstOrDefault(t => t.Name == "EventSourceFactory");
+			var factory = module.IncludeReferencedTypes().FirstOrDefault(t => t.Name == "EventSourceFactory");
 			if (factory == null) return;
 
 			var implMap = loggers.ToDictionary(l => l.Old.FullName);
 			if (implMap.Count == 0) return;
 
 			var fullNameOfGet = module.Import(factory).Resolve().FindMethod("Get").FullName;
-			var methods = module.Types.SelectMany(t => t.Methods).Where(m => m.HasBody).ToArray();
+			var methods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
 			var mapped = new Dictionary<string, TypeDefinition>();
 
 			foreach (var method in methods)

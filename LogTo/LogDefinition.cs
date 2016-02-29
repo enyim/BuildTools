@@ -33,9 +33,13 @@ namespace Enyim.Build.Weavers.LogTo
 
 		private TypeDefinition ResolveByName(string name, bool shouldThrow = true)
 		{
-			var type = module.Types.Concat(module.GetTypeReferences()).FirstOrDefault(t => t.Name == name);
+			var modules = new List<ModuleDefinition> { module };
+			if (ilog != null) modules.Add(ilog.Module);
+			if (logTo != null) modules.Add(logTo.Module);
+
+			var type = modules.SelectMany(m => m.IncludeReferencedTypes()).FirstOrDefault(t => t.Name == name);
 			if (type != null)
-				return this.module.Import(type).Resolve();
+				return module.Import(type).Resolve();
 
 			if (shouldThrow)
 				throw new InvalidOperationException($"Could not find type reference {name}");
@@ -45,7 +49,7 @@ namespace Enyim.Build.Weavers.LogTo
 
 		public FieldDefinition DeclareLogger(TypeDefinition typeDef)
 		{
-			return typeDef.DeclareStaticField(this.module, ilog, "<>log", () =>
+			return typeDef.DeclareStaticField(this.module, module.Import(ilog), "<>log", () =>
 			{
 				var factory = module.Import(ResolveByName("LogManager", true).FindMethod("GetCurrentClassLogger"));
 

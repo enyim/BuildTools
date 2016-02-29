@@ -12,7 +12,7 @@ namespace Enyim.Build.Weavers.EventSource
 			var implMap = loggers.OfType<InterfaceBasedEventSource>().ToDictionary(l => l.Old.FullName);
 			if (implMap.Count == 0) return;
 
-			foreach (var f in module.Types.SelectMany(t => t.Fields))
+			foreach (var f in module.Types.IncludeNestedTypes().SelectMany(t => t.Fields))
 			{
 				InterfaceBasedEventSource target;
 

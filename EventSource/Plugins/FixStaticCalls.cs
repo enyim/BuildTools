@@ -19,16 +19,13 @@ namespace Enyim.Build.Weavers.EventSource
 			var isEnabled = staticLoggers.ToDictionary(s => s.Old.FullName, s => module.Import(CecilExtensions.FindMethod(s.New, "IsEnabled")));
 			var comparer = new DeclaringTypeComparer();
 
-			foreach (var method in module.Types.SelectMany(t => t.Methods).Where(m => m.HasBody))
+			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))
 			{
 				FieldDefinition instanceField = null;
 				var tmp = from op in method.GetOpsOf(OpCodes.Callvirt, OpCodes.Call)
 						  let cls = ((MemberReference)op.Operand).DeclaringType.FullName
 						  where instanceMap.TryGetValue(cls, out instanceField)
 						  select new { cls, instanceField };
-
-				var debug_a = tmp.ToArray();
-				var debug_b = debug_a.Distinct().ToArray();
 
 				var instanceFields = tmp.Distinct().ToDictionary(o => o.cls, o => o.instanceField);
 				if (instanceFields.Count > 0)

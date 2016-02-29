@@ -11,11 +11,12 @@ namespace Enyim.Build.Weavers.EventSource
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
 		{
-			var methods = loggers.OfType<InterfaceBasedEventSource>().SelectMany(ies => ies.Methods);
-			var implMap = methods.ToDictionary(m => m.Old.FullName, m => m.New);
+			var implMap = loggers.OfType<InterfaceBasedEventSource>()
+								.SelectMany(ies => ies.Methods)
+								.ToDictionary(m => m.Old.FullName, m => m.New);
 			if (implMap.Count == 0) return;
 
-			foreach (var method in module.Types.SelectMany(t => t.Methods).Where(m => m.HasBody))
+			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))
 			{
 				foreach (var op in method.GetOpsOf(OpCodes.Callvirt, OpCodes.Call))
 				{

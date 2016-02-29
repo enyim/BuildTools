@@ -19,7 +19,7 @@ namespace Enyim.Build.Weavers.EventSource
 			Log.Warn = LogWarning;
 			Log.Error = LogError;
 
-			var types = ModuleDefinition.Types.ToArray();
+			var types = ModuleDefinition.Types.IncludeNestedTypes().ToArray();
 			var implemented = ImplementAbstracts(types)
 								.Concat(ImplementStatic(types))
 								.Concat(ImplementInterfaces(types))
