@@ -7,7 +7,7 @@ using Mono.Cecil.Cil;
 namespace Enyim.Build.Weavers.EventSource
 {
 	[Order(100)]
-	internal class RewriteLoggerCalls : IProcessEventSources
+	internal class RewriteEventSourceCalls : IProcessEventSources
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
 		{

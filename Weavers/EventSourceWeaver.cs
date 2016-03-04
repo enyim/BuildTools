@@ -7,29 +7,8 @@ using Mono.Cecil;
 
 namespace Weavers
 {
-	public class EventSourceWeaver
+	public class EventSourceWeaver : Enyim.Build.Weavers.EventSource.ModuleWeaver
 	{
-		public bool Debug { get; set; }
-		public Action<string> LogInfo { get; set; }
-		public Action<string> LogWarning { get; set; }
-		public Action<string> LogError { get; set; }
-		public ModuleDefinition ModuleDefinition { get; set; }
-
-		public void Execute()
-		{
-#if DEBUG
-			if (Debug)
-#endif
-			{
-				new Enyim.Build.Weavers.EventSource.ModuleWeaver
-				{
-					LogInfo = LogInfo,
-					LogError = LogError,
-					LogWarning = LogWarning,
-					ModuleDefinition = ModuleDefinition
-				}.Execute();
-			}
-		}
 	}
 }
 

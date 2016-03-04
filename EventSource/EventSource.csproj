@@ -75,6 +75,7 @@
     <Compile Include="ModuleWeaver.cs" />
     <Compile Include="NamedConst.cs" />
     <Compile Include="OrderAttribute.cs" />
+    <Compile Include="Plugins\OptimizeImplementedMethods.cs" />
     <Compile Include="Plugins\AddImplementedTypes.cs" />
     <Compile Include="Plugins\CreateInstanceFieldsForStaticTemplates.cs" />
     <Compile Include="Plugins\FactoryImplementer.cs" />
@@ -84,7 +85,7 @@
     <Compile Include="Plugins\RemoveStaticTemplates.cs" />
     <Compile Include="Plugins\RemoveWeaverReferences.cs" />
     <Compile Include="Plugins\RewriteFields.cs" />
-    <Compile Include="Plugins\RewriteLoggerCalls.cs" />
+    <Compile Include="Plugins\RewriteEventSourceCalls.cs" />
     <Compile Include="Plugins\RewriteProps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StaticEventSourceBuilder.cs" />

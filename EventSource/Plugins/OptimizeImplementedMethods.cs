@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Cecil;
+using Mono.Cecil.Rocks;
 
-namespace Weavers
+namespace Enyim.Build.Weavers.EventSource
 {
-	public class LogToWeaver : Enyim.Build.Weavers.LogTo.ModuleWeaver
+	[Order(-10000)]
+	internal class OptimizeImplementedMethods : IProcessEventSources
 	{
+		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		{
+			foreach (var m in loggers.SelectMany(l => l.New.Methods))
+			{
+				m.Body.OptimizeMacros();
+			}
+		}
 	}
 }
 

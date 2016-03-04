@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,20 +12,61 @@ namespace Runner
 	{
 		static void Main(string[] args)
 		{
-			var module = ModuleDefinition.ReadModule(typeof(Target.LogTests).Assembly.Location);
+			//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Debug\Enyim.Caching.Core.dll";
+			//var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Debug\Enyim.Caching.Memcached.dll";
+			var path = typeof(Target.CombinedTests).Assembly.Location;
 
-			new Weavers.LogToWeaver { ModuleDefinition = module, LogInfo = Console.WriteLine, Debug = true }.Execute();
+			var module = ModuleDefinition.ReadModule(path, new ReaderParameters { AssemblyResolver = new AR(path) });
+
+			new Weavers.LogToWeaver
+			{
+				ModuleDefinition = module,
+				LogInfo = Console.WriteLine,
+				LogWarning = Console.WriteLine,
+				LogError = Console.WriteLine
+			}.Execute();
 			new Weavers.EventSourceWeaver
 			{
 				ModuleDefinition = module,
 				LogInfo = Console.WriteLine,
 				LogWarning = Console.WriteLine,
-				LogError = Console.WriteLine,
-				Debug = true
+				LogError = Console.WriteLine
 			}.Execute();
 
 			module.Write("d:\\out.dll");
 		}
+	}
+
+	class AR : DefaultAssemblyResolver
+	{
+		public AR(string path)
+		{
+			var dir = Path.GetDirectoryName(path);
+			foreach (var dll in Directory.GetFiles(dir, "*.dll"))
+				RegisterAssembly(AssemblyDefinition.ReadAssembly(dll));
+		}
+
+		//public AssemblyDefinition Resolve(string fullName)
+		//{
+		//	return AssemblyDefinition.ReadAssembly(Path.Combine(path, fullName));
+		//}
+
+		//public AssemblyDefinition Resolve(AssemblyNameReference name)
+		//{
+		//	var file = Path.Combine(path, name.Name + ".dll");
+
+		//	return File.Exists(file) ? AssemblyDefinition.ReadAssembly(file) : null;
+		//}
+
+		//public AssemblyDefinition Resolve(string fullName, ReaderParameters parameters)
+		//{
+		//	throw new NotImplementedException();
+		//}
+
+		//public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+		//{
+		//	throw new NotImplementedException();
+		//}
 	}
 }
 

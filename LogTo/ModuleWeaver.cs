@@ -6,12 +6,9 @@ using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.LogTo
 {
-	public class ModuleWeaver
+	public class ModuleWeaver : ModuleWeaverBase
 	{
-		public Action<string> LogInfo { get; set; }
-		public ModuleDefinition ModuleDefinition { get; set; }
-
-		public void Execute()
+		protected override void OnExecute()
 		{
 			var logDef = new LogDefinition(ModuleDefinition);
 			var info = LogInfo ?? (_ => { });
@@ -23,19 +20,15 @@ namespace Enyim.Build.Weavers.LogTo
 			else
 			{
 				var types = (from t in ModuleDefinition.Types.IncludeNestedTypes()
-							 where t.IsClass && !t.IsAbstract && t.Name != "<Module>"
+							 where t.IsClass && t.Name != "<Module>"
 							 select t).ToArray();
 
 				foreach (var typeDef in types)
 				{
-					info($"Rewriting type {typeDef}");
-
-					var success = new LoggerImplementer(logDef, ModuleDefinition, typeDef)
+					new LoggerImplementer(logDef, ModuleDefinition, typeDef)
 					{
 						LogInfo = info
 					}.TryRewrite();
-
-					info($" Result: {success}");
 				}
 			}
 		}

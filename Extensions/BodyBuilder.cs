@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 using Mono.Collections.Generic;
 
 namespace Enyim.Build
@@ -20,6 +21,11 @@ namespace Enyim.Build
 			this.body = body;
 			labels = new HashSet<Instruction>();
 			Instructions = body.Instructions;
+
+			// converts (amongst others) all short jumps into long ones
+			// making sure that when a large amount of code is inserted the
+			// jumps will still be valid
+			body.SimplifyMacros();
 			CollectLabels();
 		}
 
@@ -37,6 +43,9 @@ namespace Enyim.Build
 		{
 			if (labels.Count > 0)
 				RemoveLabels();
+
+			// convert long form of operations into short form where possible
+			body.OptimizeMacros();
 		}
 
 		private void RemoveLabels()
@@ -44,7 +53,7 @@ namespace Enyim.Build
 			// jump (call, branch, switch etc) ops have an Instruction as Operand (the target)
 			// retarget all jumps to the first non-Nop (and not label) operation
 			// essentially removing the placeholder ops we inserted earlier
-			foreach (var instruction in body.Instructions.ToArray())
+			foreach (var instruction in body.Instructions)
 			{
 				var target = instruction.Operand as Instruction;
 				if (target != null)
@@ -68,6 +77,30 @@ namespace Enyim.Build
 			}
 
 			body.Instructions.Remove(labels);
+
+			foreach (var instruction in body.Instructions.ToArray())
+			{
+				var target = instruction.Operand as Instruction;
+				if (target != null)
+				{
+					if (labels.Contains(target))
+						throw new InvalidOperationException();
+				}
+				else
+				{
+					var targets = instruction.Operand as Instruction[];
+					if (targets != null)
+					{
+						for (var i = 0; i < targets.Length; i++)
+						{
+							var target2 = targets[i];
+							if (labels.Contains(target2))
+								throw new InvalidOperationException();
+						}
+					}
+				}
+			}
+
 			labels.Clear();
 		}
 
@@ -119,7 +152,7 @@ namespace Enyim.Build
 				if (target != null)
 				{
 					nop = Instruction.Create(OpCodes.Nop);
-					op.Operand = (object)nop;
+					op.Operand = nop;
 					ilp.InsertBefore(target, nop);
 					labels.Add(nop);
 				}

@@ -3,12 +3,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Mono.Cecil;
 
-namespace Weavers
+namespace Target
 {
-	public class LogToWeaver : Enyim.Build.Weavers.LogTo.ModuleWeaver
+	public class CombinedTests
 	{
+		public string currentWriteCopier;
+
+		public bool AAA()
+		{
+			// check if we have an op in progress
+			if (currentWriteCopier == null) return false;
+			if (currentWriteCopier.IndexOf("lofasz") > -1) return true;
+
+			// last chunk was sent
+			LogTo.Debug("Sent & finished " + currentWriteCopier.Length);
+
+			// op is sent fully; response can be expected
+			var a = DateTime.Now;
+			Console.WriteLine(a.Add(TimeSpan.FromDays(12)));
+			StaticEventSource.ConnectStop(currentWriteCopier);
+
+			// clean up
+			currentWriteCopier = null;
+
+			return false;
+		}
 	}
 }
 

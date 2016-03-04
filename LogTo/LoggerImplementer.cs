@@ -33,10 +33,7 @@ namespace Enyim.Build.Weavers.LogTo
 
 			foreach (var method in methods)
 			{
-				LogInfo(string.Format("Rewriting {0}", (object)method.FullName));
-
 				RewriteCalls(method, logger);
-				method.Body.OptimizeMacros();
 			}
 
 			return true;
@@ -44,7 +41,19 @@ namespace Enyim.Build.Weavers.LogTo
 
 		private IEnumerable<MethodDefinition> GetMethods()
 		{
-			return typeDef.Methods.Where(m => m.Body.Instructions.Any(LogDefinition.IsLogger));
+			return typeDef.Methods.Where(m => m.HasBody && m.Body.Instructions.Any(LogDefinition.IsLogger));
+		}
+
+		public static string Dump(MethodDefinition method)
+		{
+			return String.Join(Environment.NewLine,
+				method.Body.Instructions.Select(i => i.ToString().Substring(i.ToString().IndexOf(':') + 1)));
+		}
+
+		public static string Dump2(MethodDefinition method)
+		{
+			return String.Join(Environment.NewLine,
+				method.Body.Instructions.Select(i => i.ToString()));
 		}
 
 		private void RewriteCalls(MethodDefinition method, FieldDefinition logger)
@@ -53,29 +62,34 @@ namespace Enyim.Build.Weavers.LogTo
 			var calls = callCollector.FindCalls(method, LogDefinition.IsLogger);
 			var collapsed = callCollector.CollapseBlocks(calls, new SameMethodComparer());
 
-			using (var builder = new BodyBuilder(method))
+			if (collapsed.Length > 0)
 			{
-				foreach (var callGroup in collapsed)
+				LogInfo($"Rewriting {method.FullName}");
+
+				using (var builder = new BodyBuilder(method))
 				{
-					var start = callGroup.Start;
-					var label = builder.DefineLabel();
-					var end = callGroup.Calls.First().End;
-
-					builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, logger));
-					builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, this.logDef.FindGuard(end)));
-					builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
-
-					var logMethod = logDef.MapToILog(end);
-
-					foreach (var call in callGroup.Calls)
+					foreach (var callGroup in collapsed)
 					{
-						builder.InsertBefore(call.Start, Instruction.Create(OpCodes.Ldsfld, logger));
+						var start = callGroup.Start;
+						var label = builder.DefineLabel();
+						var end = callGroup.Calls.First().End;
 
-						call.End.OpCode = OpCodes.Callvirt;
-						call.End.Operand = logMethod;
+						builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, logger));
+						builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, this.logDef.FindGuard(end)));
+						builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
+
+						var logMethod = logDef.MapToILog(end);
+
+						foreach (var call in callGroup.Calls)
+						{
+							builder.InsertBefore(call.Start, Instruction.Create(OpCodes.Ldsfld, logger));
+
+							call.End.OpCode = OpCodes.Callvirt;
+							call.End.Operand = logMethod;
+						}
+
+						builder.InsertAfter(callGroup.End, label);
 					}
-
-					builder.InsertAfter(callGroup.End, label);
 				}
 			}
 		}

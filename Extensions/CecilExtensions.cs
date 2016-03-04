@@ -160,11 +160,6 @@ namespace Enyim.Build
 			return true;
 		}
 
-		public static Instruction AsLdc_I(this int i)
-		{
-			return Instruction.Create(OpCodes.Ldc_I4, i);
-		}
-
 		public static IEnumerable<T> Once<T>(this T item)
 		{
 			return new T[1] { item };
@@ -300,19 +295,6 @@ namespace Enyim.Build
 		private static IEnumerable<TypeDefinition> SelfAndNested(TypeDefinition type)
 		{
 			return type.Once().Concat(type.NestedTypes.SelectMany(SelfAndNested));
-		}
-	}
-
-	public static class WeaverHelpers
-	{
-		public static IEnumerable<MethodDefinition> AllMethods(ModuleDefinition module)
-		{
-			return module.Types.IncludeNestedTypes().SelectMany(t => t.Methods);
-		}
-
-		public static IEnumerable<MethodDefinition> AllMethodsWithBody(ModuleDefinition module)
-		{
-			return AllMethods(module).Where(m => m.HasBody);
 		}
 	}
 }

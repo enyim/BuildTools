@@ -81,6 +81,10 @@
       <Project>{7aeb8bdf-3088-46a2-b454-c7a9f784b51a}</Project>
       <Name>EventSource</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Extensions\Extensions.csproj">
+      <Project>{66e29c5a-5a3a-4793-acc0-9b4452adf177}</Project>
+      <Name>Extensions</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LogTo\LogTo.csproj">
       <Project>{73087402-8a83-47d8-b62d-ff50e200a604}</Project>
       <Name>LogTo</Name>

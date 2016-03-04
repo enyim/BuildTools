@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define ENABLE_UNSAFE
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -19,7 +20,9 @@ namespace Enyim.Build.Weavers.EventSource
 		protected readonly IEventSourceTypeDefs typeDefs;
 		protected readonly Lazy<TypeDefinition> ensureTasks;
 		protected readonly Lazy<TypeDefinition> ensureOpcodes;
+#if ENABLE_UNSAFE
 		protected readonly UnsafeWriteEventBuilder unsafeWriteEventBuilder;
+#endif
 
 		protected EventSourceImplementerBase(ModuleDefinition module, EventSourceTemplate template)
 		{
@@ -28,7 +31,9 @@ namespace Enyim.Build.Weavers.EventSource
 			this.typeDefs = template.TypeDefs;
 			this.ensureOpcodes = EnsureNestedBuilder("Opcodes");
 			this.ensureTasks = EnsureNestedBuilder("Tasks");
+#if ENABLE_UNSAFE
 			this.unsafeWriteEventBuilder = new UnsafeWriteEventBuilder(module, typeDefs);
+#endif
 		}
 
 		protected abstract MethodDefinition ImplementLogMethod(LogMethod metadata);
@@ -43,9 +48,6 @@ namespace Enyim.Build.Weavers.EventSource
 							.Loggers.Select(meta => Implemented.Create(meta.Method, this.ImplementLogMethod(meta)))
 							.Concat(template.Guards.Select(meta => Implemented.Create(meta.Template, ImplementGuardMethod(meta))))
 							.ToArray();
-
-			foreach (var impl in retval)
-				MethodBodyRocks.OptimizeMacros(impl.New.Body);
 
 			return retval;
 		}
@@ -164,9 +166,11 @@ namespace Enyim.Build.Weavers.EventSource
 
 			return specific != null
 					? EmitSpecificWriteEvent(builder, method, specific, metadata)
+#if ENABLE_UNSAFE
 					: unsafeWriteEventBuilder.CanDo(method)
 						? unsafeWriteEventBuilder.Emit(builder, method, metadata)
-						: EmitWriteEventFallback(builder, method, metadata);
+#endif
+					: EmitWriteEventFallback(builder, method, metadata);
 		}
 
 		private IEnumerable<Instruction> EmitSpecificWriteEvent(BodyBuilder builder, MethodDefinition method, MethodReference writeEvent, LogMethod metadata)
@@ -177,7 +181,7 @@ namespace Enyim.Build.Weavers.EventSource
 			foreach (var p in method.Parameters)
 			{
 				yield return Instruction.Create(OpCodes.Ldarg, p);
-				foreach (var i in EmitConvertCode(p.ParameterType.Resolve()))
+				foreach (var i in EmitConvertCode(p.ParameterType.Resolve(), builder))
 					yield return i;
 			}
 
@@ -224,28 +228,27 @@ namespace Enyim.Build.Weavers.EventSource
 			return type;
 		}
 
-		private IEnumerable<Instruction> EmitConvertCode(TypeReference sourceType)
+		private IEnumerable<Instruction> EmitConvertCode(TypeReference sourceType, BodyBuilder builder)
 		{
 			if (sourceType.FullName == module.TypeSystem.Boolean.FullName)
-				return EmitBoolConvertCode();
+				return EmitBoolConvertCode(builder);
 
 			// TODO
 			return Enumerable.Empty<Instruction>();
 		}
 
-		private IEnumerable<Instruction> EmitBoolConvertCode()
+		private IEnumerable<Instruction> EmitBoolConvertCode(BodyBuilder builder)
 		{
-			var @true = CecilExtensions.AsLdc_I(1);
-			var @false = CecilExtensions.AsLdc_I(0);
-			var nop = Instruction.Create(OpCodes.Nop);
+			var @true = Instruction.Create(OpCodes.Ldc_I4, 1);
+			var endOfBlock = builder.DefineLabel();
 
 			yield return Instruction.Create(OpCodes.Brtrue, @true);
-			yield return @false;
+			yield return Instruction.Create(OpCodes.Ldc_I4, 0);
 
-			yield return Instruction.Create(OpCodes.Br, nop);
+			yield return Instruction.Create(OpCodes.Br, endOfBlock);
 			yield return @true;
 
-			yield return nop;
+			yield return endOfBlock;
 		}
 
 		private Lazy<TypeDefinition> EnsureNestedBuilder(string name)

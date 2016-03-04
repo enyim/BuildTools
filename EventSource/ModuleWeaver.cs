@@ -6,14 +6,9 @@ using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.EventSource
 {
-	public class ModuleWeaver
+	public class ModuleWeaver : ModuleWeaverBase
 	{
-		public ModuleDefinition ModuleDefinition { get; set; }
-		public Action<string> LogInfo { get; set; }
-		public Action<string> LogWarning { get; set; }
-		public Action<string> LogError { get; set; }
-
-		public void Execute()
+		protected override void OnExecute()
 		{
 			Log.Info = LogInfo;
 			Log.Warn = LogWarning;
@@ -29,7 +24,6 @@ namespace Enyim.Build.Weavers.EventSource
 						  where t.IsClass && typeof(IProcessEventSources).IsAssignableFrom(t)
 						  orderby t.GetCustomAttribute<OrderAttribute>()?.Order
 						  select t;
-
 
 			foreach (var p in plugins)
 				((IProcessEventSources)Activator.CreateInstance(p)).Rewrite(ModuleDefinition, implemented);
