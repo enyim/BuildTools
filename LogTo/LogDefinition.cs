@@ -49,6 +49,13 @@ namespace Enyim.Build.Weavers.LogTo
 
 		public FieldDefinition DeclareLogger(TypeDefinition typeDef)
 		{
+			if (typeDef.Interfaces.Any(t => t.Name == "IAsyncStateMachine"))
+				typeDef = typeDef.DeclaringType;
+
+			var retval = typeDef.Fields.FirstOrDefault(f => f.Name == "<>log");
+			if (retval != null)
+				return retval;
+
 			return typeDef.DeclareStaticField(this.module, module.Import(ilog), "<>log", () =>
 			{
 				var factory = module.Import(ResolveByName("LogManager", true).FindMethod("GetCurrentClassLogger"));
