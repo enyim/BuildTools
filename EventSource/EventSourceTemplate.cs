@@ -31,14 +31,14 @@ namespace Enyim.Build.Weavers.EventSource
 			guards = new Lazy<IReadOnlyList<GuardMethod>>(() => GetGuardMethods().ToArray());
 		}
 
-		public TypeDefinition Type { get; private set; }
-		public IEventSourceTypeDefs TypeDefs { get; private set; }
-		public TypeDefinition Keywords { get; private set; }
-		public TypeDefinition Tasks { get; private set; }
-		public TypeDefinition Opcodes { get; private set; }
+		public TypeDefinition Type { get; }
+		public IEventSourceTypeDefs TypeDefs { get; }
+		public TypeDefinition Keywords { get; }
+		public TypeDefinition Tasks { get; }
+		public TypeDefinition Opcodes { get; }
 
-		public IReadOnlyList<LogMethod> Loggers { get { return this.loggers.Value; } }
-		public IReadOnlyList<GuardMethod> Guards { get { return this.guards.Value; } }
+		public IReadOnlyList<LogMethod> Loggers { get { return loggers.Value; } }
+		public IReadOnlyList<GuardMethod> Guards { get { return guards.Value; } }
 
 		private static TypeDefinition GetNamedNestedType(TypeDefinition type, string name)
 		{

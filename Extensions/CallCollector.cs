@@ -31,7 +31,6 @@ namespace Enyim.Build
 					if (methodReference != null && (filter == null || filter(methodReference)))
 					{
 						var slot = byteCode.StackBefore;
-
 						yield return new Call(ops[GetStartOfCallBlock(method, byteCode)], ops[byteCode.Offset]);
 					}
 				}
@@ -99,16 +98,11 @@ namespace Enyim.Build
 
 		public class CallGroup
 		{
-			private readonly List<Call> calls;
+			private readonly List<Call> calls = new List<Call>();
 
 			public IReadOnlyList<Call> Calls
 			{
-				get { return (IReadOnlyList<Call>)this.calls; }
-			}
-
-			public CallGroup()
-			{
-				this.calls = new List<Call>();
+				get { return calls; }
 			}
 
 			public CallGroup(params Call[] calls)
@@ -140,9 +134,9 @@ namespace Enyim.Build
 				Method = (MethodReference)end.Operand;
 			}
 
-			public Instruction Start { get; private set; }
-			public MethodReference Method { get; private set; }
-			public Instruction End { get; private set; }
+			public Instruction Start { get; }
+			public MethodReference Method { get; }
+			public Instruction End { get; }
 		}
 	}
 }
