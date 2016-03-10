@@ -26,7 +26,24 @@ namespace Enyim.Build
 			// making sure that when a large amount of code is inserted the
 			// jumps will still be valid
 			body.SimplifyMacros();
-			CollectLabels();
+
+			LabelizeJumps();
+			LabelizeExceptionHandlers();
+		}
+
+		public void Dispose()
+		{
+			if (labels.Count > 0)
+			{
+				UnlabelizeJumps();
+				UnlabelizeExceptionHandlers();
+
+				body.Instructions.Remove(labels);
+				labels.Clear();
+			}
+
+			// convert long form of operations into short form where possible
+			body.OptimizeMacros();
 		}
 
 		public void InsertBefore(Instruction where, Instruction what)
@@ -39,16 +56,7 @@ namespace Enyim.Build
 			Instructions.Insert(Instructions.IndexOf(where) + 1, what);
 		}
 
-		public void Dispose()
-		{
-			if (labels.Count > 0)
-				RemoveLabels();
-
-			// convert long form of operations into short form where possible
-			body.OptimizeMacros();
-		}
-
-		private void RemoveLabels()
+		private void UnlabelizeJumps()
 		{
 			// jump (call, branch, switch etc) ops have an Instruction as Operand (the target)
 			// retarget all jumps to the first non-Nop (and not label) operation
@@ -75,33 +83,6 @@ namespace Enyim.Build
 					}
 				}
 			}
-
-			body.Instructions.Remove(labels);
-
-			foreach (var instruction in body.Instructions.ToArray())
-			{
-				var target = instruction.Operand as Instruction;
-				if (target != null)
-				{
-					if (labels.Contains(target))
-						throw new InvalidOperationException();
-				}
-				else
-				{
-					var targets = instruction.Operand as Instruction[];
-					if (targets != null)
-					{
-						for (var i = 0; i < targets.Length; i++)
-						{
-							var target2 = targets[i];
-							if (labels.Contains(target2))
-								throw new InvalidOperationException();
-						}
-					}
-				}
-			}
-
-			labels.Clear();
 		}
 
 		private Instruction GetNextNonLabel(Instruction op)
@@ -138,7 +119,15 @@ namespace Enyim.Build
 			return retval;
 		}
 
-		private void CollectLabels()
+		private Instruction GetMeALabel()
+		{
+			var nop = Instruction.Create(OpCodes.Nop);
+			labels.Add(nop);
+
+			return nop;
+		}
+
+		private void LabelizeJumps()
 		{
 			var ilp = body.GetILProcessor();
 			Instruction nop;
@@ -151,10 +140,9 @@ namespace Enyim.Build
 				var target = op.Operand as Instruction;
 				if (target != null)
 				{
-					nop = Instruction.Create(OpCodes.Nop);
+					nop = GetMeALabel();
 					op.Operand = nop;
 					ilp.InsertBefore(target, nop);
-					labels.Add(nop);
 				}
 				else
 				{
@@ -163,14 +151,44 @@ namespace Enyim.Build
 					{
 						for (var i = 0; i < targets.Length; i++)
 						{
-							nop = Instruction.Create(OpCodes.Nop);
+							nop = GetMeALabel();
 							ilp.InsertBefore(targets[i], nop);
 							targets[i] = nop;
-
-							labels.Add(nop);
 						}
 					}
 				}
+			}
+		}
+
+		private Instruction RetargetWithLabel(Instruction original)
+		{
+			var label = GetMeALabel();
+			body.GetILProcessor().InsertBefore(original, label);
+
+			return label;
+		}
+
+		private void LabelizeExceptionHandlers()
+		{
+			foreach (var h in body.ExceptionHandlers)
+			{
+				h.HandlerStart = RetargetWithLabel(h.HandlerStart);
+				h.HandlerEnd = RetargetWithLabel(h.HandlerEnd);
+
+				h.TryStart = RetargetWithLabel(h.TryStart);
+				h.TryEnd = RetargetWithLabel(h.TryEnd);
+			}
+		}
+
+		private void UnlabelizeExceptionHandlers()
+		{
+			foreach (var h in body.ExceptionHandlers)
+			{
+				h.HandlerStart = GetNextNonLabel(h.HandlerStart);
+				h.HandlerEnd = GetNextNonLabel(h.HandlerEnd);
+
+				h.TryStart = GetNextNonLabel(h.TryStart);
+				h.TryEnd = GetNextNonLabel(h.TryEnd);
 			}
 		}
 	}

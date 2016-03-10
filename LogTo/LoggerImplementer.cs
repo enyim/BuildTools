@@ -29,10 +29,11 @@ namespace Enyim.Build.Weavers.LogTo
 			var methods = GetMethods().ToArray();
 			if (methods.Length == 0) return false;
 
-			var logger = logDef.DeclareLogger(this.typeDef);
+			var logger = logDef.DeclareLogger(typeDef);
 
 			foreach (var method in methods)
 			{
+				DeclareExceptionsForLoggers(method);
 				RewriteCalls(method, logger);
 			}
 
@@ -44,16 +45,41 @@ namespace Enyim.Build.Weavers.LogTo
 			return typeDef.Methods.Where(m => m.HasBody && m.Body.Instructions.Any(LogDefinition.IsLogger));
 		}
 
-		public static string Dump(MethodDefinition method)
+		private void DeclareExceptionsForLoggers(MethodDefinition method)
 		{
-			return String.Join(Environment.NewLine,
-				method.Body.Instructions.Select(i => i.ToString().Substring(i.ToString().IndexOf(':') + 1)));
-		}
+			if (!method.Body.HasExceptionHandlers) return;
 
-		public static string Dump2(MethodDefinition method)
-		{
-			return String.Join(Environment.NewLine,
-				method.Body.Instructions.Select(i => i.ToString()));
+			// in release builds if the LogTo.Error (or similar) immediately follows the catch(E) block
+			// the compiler will not declare a local variable for the exception (as the catch block already has it on stack)
+			// which messes up the call analyzer
+			// in these cases, we introduce a local variable for the exception
+			var calls = method.GetOpsOf(OpCodes.Call, OpCodes.Callvirt).Where(LogDefinition.IsLogger).ToArray();
+
+			if (calls.Length > 0)
+			{
+				var ilp = method.Body.GetILProcessor();
+
+				var ehToFix = method.Body
+									.ExceptionHandlers
+									.Where(eh => eh.HandlerType == ExceptionHandlerType.Catch
+													&& calls.Any(c => eh.HandlerStart.Offset <= c.Offset
+																		&& c.Offset <= eh.HandlerEnd.Offset))
+									.ToArray();
+
+				foreach (var eh in ehToFix)
+				{
+					var local = new VariableDefinition(eh.CatchType);
+					method.Body.Variables.Add(local);
+
+					var stloc = Instruction.Create(OpCodes.Stloc, local);
+					ilp.InsertBefore(eh.HandlerStart, stloc);
+					ilp.InsertBefore(eh.HandlerStart, Instruction.Create(OpCodes.Ldloc, local));
+					eh.HandlerStart = stloc;
+					eh.TryEnd = stloc;
+				}
+
+				method.Body.OptimizeMacros();
+			}
 		}
 
 		private void RewriteCalls(MethodDefinition method, FieldDefinition logger)

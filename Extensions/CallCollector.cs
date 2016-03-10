@@ -32,18 +32,35 @@ namespace Enyim.Build
 					{
 						var slot = byteCode.StackBefore;
 
-						yield return new Call(ops[GetStartOfCallBlock(byteCode)], ops[byteCode.Offset]);
+						yield return new Call(ops[GetStartOfCallBlock(method, byteCode)], ops[byteCode.Offset]);
 					}
 				}
 			}
 		}
 
-		private static int GetStartOfCallBlock(ILAstBuilder.ByteCode bc)
+		private static int GetStartOfCallBlock(MethodDefinition method, ILAstBuilder.ByteCode bc)
 		{
 			var slot = bc.StackBefore;
 
-			while (slot.Length > 0)
+			if (slot == null)
+				throw new InvalidOperationException();
+
+			while (slot != null && slot.Length > 0)
 			{
+				var defs = slot.SelectMany(s => s.Definitions).ToArray();
+				var ldx = Array.FindIndex(defs, d => d.Code == ILCode.Ldexception);
+				if (ldx > -1)
+				{
+					var containedBy = method.Body.ExceptionHandlers
+											.Where(eh => eh.HandlerStart.Offset <= bc.Offset && bc.Offset <= eh.HandlerEnd.Offset)
+											.OrderBy(eh => eh.HandlerEnd.Offset - eh.HandlerStart.Offset)
+											.First();
+
+					return containedBy.HandlerStart.Offset;
+					//if (ldx == defs.Length - 1) break;
+					//return defs[ldx + 1].Offset;
+				}
+
 				bc = slot.SelectMany(s => s.Definitions).OrderBy(d => d.Offset).First();
 				slot = bc.StackBefore;
 			}

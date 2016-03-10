@@ -29,6 +29,45 @@ namespace Target
 
 			return false;
 		}
+
+		public void TryCatch()
+		{
+			try
+			{
+				LogTo.Debug("a");
+			}
+			catch { Console.WriteLine(1); }
+
+			try
+			{
+				LogTo.Debug("a");
+			}
+			catch (InvalidCastException e1) { LogTo.Error(e1); }
+			catch (Exception e2) { LogTo.Error(e2); }
+
+			try
+			{
+				LogTo.Debug("5");
+			}
+			catch (InvalidCastException e1) { LogTo.Error(e1); }
+			catch (Exception e2) { LogTo.Error(e2); }
+		}
+
+		public async Task Lofasz()
+		{
+			await Task.Delay(1);
+
+			LogTo.Debug("aaaa");
+
+			try
+			{
+				await Task.Delay(1);
+			}
+			catch (Exception e)
+			{
+				LogTo.Error(e);
+			}
+		}
 	}
 }
 
