@@ -10,7 +10,7 @@ namespace Enyim.Build.Weavers.LogTo
 	{
 		private readonly ModuleDefinition module;
 		private readonly Dictionary<string, MethodReference> ilogMap;
-		private readonly Dictionary<string, MethodReference> guardMap;
+		private readonly Dictionary<string, MethodReference> guardProperties;
 		private readonly TypeDefinition logTo;
 		private readonly TypeDefinition ilog;
 
@@ -23,10 +23,46 @@ namespace Enyim.Build.Weavers.LogTo
 
 			if (logTo == null || ilog == null) return;
 
-			ilogMap = logTo.Methods.ToDictionary(m => m.ToString(), m => module.Import(FindMatching(m, ilog)));
-			guardMap = ilog.Properties.ToDictionary(p => p.Name.Substring(2).Replace("Enabled", ""), p => module.Import(p.GetMethod));
+			ilogMap = GetILogMap(module, logTo, ilog);
+			guardProperties = GetGuardProperties(module, ilog);
 
 			IsValid = true;
+		}
+
+		private static Dictionary<string, MethodReference> GetILogMap(ModuleDefinition module, TypeDefinition logTo, TypeDefinition ilog)
+		{
+			var retval = new Dictionary<string, MethodReference>();
+
+			foreach (var m in logTo.Methods)
+			{
+				var matching = FindMatching(m, ilog);
+				if (matching == null)
+					throw new InvalidOperationException($"Cannot find matching method in {ilog} for {m}");
+
+				retval.Add(m.ToString(), module.Import(matching));
+			}
+
+			return retval;
+		}
+
+		private static Dictionary<string, MethodReference> GetGuardProperties(ModuleDefinition module, TypeDefinition ilog)
+		{
+			var retval = new Dictionary<string, MethodReference>();
+
+			foreach (var p in ilog.Properties)
+			{
+				if (!p.Name.StartsWith("Is") || !p.Name.EndsWith("Enabled"))
+					continue;
+
+				var getter = p.GetMethod;
+				if (getter == null)
+					throw new InvalidOperationException($"Property {p} does not have a getter");
+
+				var name = p.Name.Substring(2, p.Name.Length - 9);
+				retval.Add(name, module.Import(getter));
+			}
+
+			return retval;
 		}
 
 		public bool IsValid { get; }
@@ -76,7 +112,12 @@ namespace Enyim.Build.Weavers.LogTo
 
 		public MethodReference FindGuard(MethodReference md)
 		{
-			return guardMap[md.Name];
+			MethodReference retval;
+
+			if (!guardProperties.TryGetValue(md.Name, out retval))
+				throw new InvalidOperationException($"Method {md} does not have a guard property defined in {ilog}");
+
+			return retval;
 		}
 
 		public MethodReference FindGuard(Instruction instruction)
@@ -84,7 +125,7 @@ namespace Enyim.Build.Weavers.LogTo
 			return FindGuard((MethodReference)instruction.Operand);
 		}
 
-		private MethodDefinition FindMatching(MethodDefinition what, TypeDefinition where)
+		private static MethodDefinition FindMatching(MethodDefinition what, TypeDefinition where)
 		{
 			var find = LogDefinition.GetParams(what).ToArray();
 
