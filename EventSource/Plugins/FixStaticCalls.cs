@@ -16,7 +16,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			var logMap = staticLoggers.SelectMany(l => l.Methods).ToDictionary(m => m.Old.FullName, m => m.New);
 			var instanceMap = staticLoggers.ToDictionary(s => s.Old.FullName, s => (FieldDefinition)s.Meta["Instance"]);
-			var isEnabled = staticLoggers.ToDictionary(s => s.Old.FullName, s => module.Import(CecilExtensions.FindMethod(s.New, "IsEnabled")));
+			var isEnabled = staticLoggers.ToDictionary(s => s.Old.FullName, s => module.ImportReference(CecilExtensions.FindMethod(s.New, "IsEnabled")));
 			var comparer = new DeclaringTypeComparer();
 
 			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))

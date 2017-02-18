@@ -24,7 +24,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			IsEnabledSpecific = BaseTypeImpl.FindMethod("IsEnabled", EventLevel, EventKeywords).ImportInto(module);
 			IsEnabledFallback = BaseTypeImpl.FindMethod("IsEnabled").ImportInto(module);
-			WriteEventFallback = BaseTypeImpl.FindMethod("WriteEvent", module.TypeSystem.Int32, module.Import(typeof(object[]))).ImportInto(module);
+			WriteEventFallback = BaseTypeImpl.FindMethod("WriteEvent", module.TypeSystem.Int32, module.ImportReference(typeof(object[]))).ImportInto(module);
 			WriteEventCore = BaseTypeImpl.Methods.First(m => m.Name == "WriteEventCore").ImportInto(module);
 
 			EventDataRef = BaseTypeImpl.NestedTypes.First(t => t.Name == "EventData").ImportInto(module);
@@ -67,10 +67,10 @@ namespace Enyim.Build.Weavers.EventSource
 											.FirstOrDefault(t => t.FullName == "Microsoft.Diagnostics.Tracing.EventSource");
 
 				if (def != null)
-					return module.Import(def);
+					return module.ImportReference(def);
 			}
 
-			return module.Import(typeof(System.Diagnostics.Tracing.EventSource));
+			return module.ImportReference(typeof(System.Diagnostics.Tracing.EventSource));
 		}
 
 		private static TypeReference ImportOne(ModuleDefinition target, ModuleDefinition source, string name, params string[] namespaces)

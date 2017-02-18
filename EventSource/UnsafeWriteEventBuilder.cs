@@ -123,7 +123,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Brfalse, isnull);
 
 			yield return Instruction.Create(OpCodes.Ldloc, pointer);
-			yield return Instruction.Create(OpCodes.Call, module.Import(RuntimeHelpers_OffsetToStringData_Get));
+			yield return Instruction.Create(OpCodes.Call, module.ImportReference(RuntimeHelpers_OffsetToStringData_Get));
 			yield return Instruction.Create(OpCodes.Add);
 			yield return Instruction.Create(OpCodes.Stloc, pointer);
 
@@ -131,7 +131,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			yield return Instruction.Create(OpCodes.Ldloc, item);
 			yield return Instruction.Create(OpCodes.Ldloc, pointer);
-			yield return Instruction.Create(OpCodes.Call, module.Import(IntPtr_Op_Explicit));
+			yield return Instruction.Create(OpCodes.Call, module.ImportReference(IntPtr_Op_Explicit));
 			yield return Instruction.Create(OpCodes.Call, typeDefs.EventDataSetDataPointer);
 
 			yield return Instruction.Create(OpCodes.Ldnull);
@@ -140,7 +140,7 @@ namespace Enyim.Build.Weavers.EventSource
 			// data[].Size = (SringArg.Length + 1) * 2
 			yield return Instruction.Create(OpCodes.Ldloc, item);
 			yield return Instruction.Create(OpCodes.Ldarg, param);
-			yield return Instruction.Create(OpCodes.Callvirt, module.Import(String_Length_Get));
+			yield return Instruction.Create(OpCodes.Callvirt, module.ImportReference(String_Length_Get));
 			yield return Instruction.Create(OpCodes.Ldc_I4_1);
 			yield return Instruction.Create(OpCodes.Add);
 			yield return Instruction.Create(OpCodes.Ldc_I4_2);
@@ -169,7 +169,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Ldloc, item);
 			yield return Instruction.Create(OpCodes.Ldloca, temp);
 			yield return Instruction.Create(OpCodes.Conv_U);
-			yield return Instruction.Create(OpCodes.Call, module.Import(IntPtr_Op_Explicit));
+			yield return Instruction.Create(OpCodes.Call, module.ImportReference(IntPtr_Op_Explicit));
 			yield return Instruction.Create(OpCodes.Call, typeDefs.EventDataSetDataPointer);
 
 			////> item->Size = 4;
@@ -184,7 +184,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Ldloc, item);
 			yield return Instruction.Create(OpCodes.Ldarga, param);
 			yield return Instruction.Create(OpCodes.Conv_U);
-			yield return Instruction.Create(OpCodes.Call, module.Import(IntPtr_Op_Explicit));
+			yield return Instruction.Create(OpCodes.Call, module.ImportReference(IntPtr_Op_Explicit));
 			yield return Instruction.Create(OpCodes.Call, typeDefs.EventDataSetDataPointer);
 
 			////> item->Size = 4;

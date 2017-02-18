@@ -19,6 +19,8 @@ namespace Enyim.Build
 		public Action<string> LogWarning { get; set; }
 		public Action<string> LogError { get; set; }
 
+		public void Dispose() { }
+
 		public void Execute()
 		{
 			ReadConfig();

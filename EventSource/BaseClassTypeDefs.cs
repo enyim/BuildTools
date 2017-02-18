@@ -29,7 +29,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			IsEnabledSpecific = BaseTypeImpl.FindMethod("IsEnabled", EventLevel, EventKeywords).ImportInto(module);
 			IsEnabledFallback = BaseTypeImpl.FindMethod("IsEnabled").ImportInto(module);
-			WriteEventFallback = BaseTypeImpl.FindMethod("WriteEvent", module.TypeSystem.Int32, module.Import(typeof(object[]))).ImportInto(module);
+			WriteEventFallback = BaseTypeImpl.FindMethod("WriteEvent", module.TypeSystem.Int32, module.ImportReference(typeof(object[]))).ImportInto(module);
 			WriteEventCore = BaseTypeImpl.Methods.First(m => m.Name == "WriteEventCore").ImportInto(module);
 
 			EventDataRef = BaseTypeImpl.NestedTypes.First(t => t.Name == "EventData").ImportInto(module);

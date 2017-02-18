@@ -15,7 +15,7 @@ namespace Enyim.Build.Weavers.EventSource
 			{
 				var newType = es.New;
 				var ctor = newType.FindConstructor(new TypeReference[0]);
-				var field = newType.DeclareStaticField(module, module.Import(newType), "<>Instance", () => new Instruction[]
+				var field = newType.DeclareStaticField(module, module.ImportReference(newType), "<>Instance", () => new Instruction[]
 				{
 					Instruction.Create(OpCodes.Newobj, ctor)
 				}, FieldAttributes.Public);

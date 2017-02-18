@@ -112,11 +112,11 @@ namespace Enyim.Build.Weavers.EventSource
 			protected override MethodDefinition ImplementLogMethod(LogMethod metadata)
 			{
 				var source = metadata.Method;
-				var newMethod = new MethodDefinition(source.Name, MethodAttributes.Public, module.Import(source.ReturnType));
+				var newMethod = new MethodDefinition(source.Name, MethodAttributes.Public, module.ImportReference(source.ReturnType));
 				target.Methods.Add(newMethod);
 
 				foreach (var p in source.Parameters)
-					newMethod.Parameters.Add(new ParameterDefinition(p.Name, p.Attributes, module.Import(p.ParameterType)));
+					newMethod.Parameters.Add(new ParameterDefinition(p.Name, p.Attributes, module.ImportReference(p.ParameterType)));
 
 				source.CopyAttrsTo(newMethod);
 

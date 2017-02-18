@@ -63,7 +63,7 @@ namespace Enyim.Build.Weavers.EventSource
 			if (metadata.Task != null)
 			{
 				if (!metadata.Task.Exists)
-					AddConst<int>(ensureTasks.Value, module.Import(typeDefs.EventTask), metadata.Task);
+					AddConst<int>(ensureTasks.Value, module.ImportReference(typeDefs.EventTask), metadata.Task);
 
 				ea.SetPropertyValue("Task", typeDefs.EventTask, metadata.Task.Value);
 			}
@@ -71,7 +71,7 @@ namespace Enyim.Build.Weavers.EventSource
 			if (metadata.Opcode != null)
 			{
 				if (!metadata.Opcode.Exists)
-					AddConst<int>(ensureOpcodes.Value, module.Import(typeDefs.EventOpcode), metadata.Opcode);
+					AddConst<int>(ensureOpcodes.Value, module.ImportReference(typeDefs.EventOpcode), metadata.Opcode);
 
 				ea.SetPropertyValue("Opcode", typeDefs.EventOpcode, metadata.Opcode.Value);
 			}
@@ -185,7 +185,7 @@ namespace Enyim.Build.Weavers.EventSource
 					yield return i;
 			}
 
-			yield return Instruction.Create(OpCodes.Call, module.Import(writeEvent));
+			yield return Instruction.Create(OpCodes.Call, module.ImportReference(writeEvent));
 		}
 
 		private IEnumerable<Instruction> EmitWriteEventFallback(BodyBuilder builder, MethodDefinition method, LogMethod metadata)

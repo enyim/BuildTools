@@ -110,7 +110,7 @@ namespace Enyim.Build
 			if (reusable && localCache.TryGetValue(type.FullName, out retval))
 				return retval;
 
-			retval = new VariableDefinition(name, type);
+			retval = new VariableDefinition(type);
 			body.Variables.Add(retval);
 
 			if (reusable)

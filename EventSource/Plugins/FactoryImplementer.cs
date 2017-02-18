@@ -17,7 +17,7 @@ namespace Enyim.Build.Weavers.EventSource
 			var implMap = loggers.ToDictionary(l => l.Old.FullName);
 			if (implMap.Count == 0) return;
 
-			var fullNameOfGet = module.Import(factory).Resolve().FindMethod("Get").FullName;
+			var fullNameOfGet = module.ImportReference(factory).Resolve().FindMethod("Get").FullName;
 			var methods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
 			var mapped = new Dictionary<string, TypeDefinition>();
 
@@ -58,7 +58,7 @@ namespace Enyim.Build.Weavers.EventSource
 							throw new InvalidOperationException($"{target.FullName} has no constructor");
 
 						var @new = Instruction.Create(OpCodes.Newobj, ctor);
-						@new.SequencePoint = call.Instruction.SequencePoint;
+						//@new.SequencePoint = method.DebugInformation.GetSequencePoint(call.Instruction);
 						ilp.Replace(call.Instruction, @new);
 
 						Log.Info($"Factory: {call.Wanted.FullName} -> {target.FullName}");
