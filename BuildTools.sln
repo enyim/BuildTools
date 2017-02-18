@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Extensions", "Extensions\Extensions.csproj", "{66E29C5A-5A3A-4793-ACC0-9B4452ADF177}"
 EndProject
@@ -23,6 +23,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weavers", "Weavers\Weavers.csproj", "{293733A6-03C6-48C1-96B3-BF4F86B12F81}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Runner", "Runner\Runner.csproj", "{74D6729F-0476-4215-881A-978F4ED4048E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssemblyInfo", "AssemblyInfo\AssemblyInfo.csproj", "{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -136,6 +138,22 @@ Global
 		{74D6729F-0476-4215-881A-978F4ED4048E}.Release|ARM.ActiveCfg = Release|Any CPU
 		{74D6729F-0476-4215-881A-978F4ED4048E}.Release|x64.ActiveCfg = Release|Any CPU
 		{74D6729F-0476-4215-881A-978F4ED4048E}.Release|x86.ActiveCfg = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|ARM.Build.0 = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|x64.Build.0 = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Debug|x86.Build.0 = Debug|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|ARM.ActiveCfg = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|ARM.Build.0 = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|x64.ActiveCfg = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|x64.Build.0 = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|x86.ActiveCfg = Release|Any CPU
+		{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

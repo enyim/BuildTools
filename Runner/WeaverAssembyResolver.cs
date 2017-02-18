@@ -1,47 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.IO;
+using Mono.Cecil;
 
-namespace Target
+namespace Runner
 {
-	public class LogTests
+	internal class WeaverAssembyResolver : DefaultAssemblyResolver
 	{
-		static void Main(string[] args)
+		public WeaverAssembyResolver(string path)
 		{
-			LogTo.Debug("1");
+			var dir = Path.GetDirectoryName(path);
 
-			LogTo.Info("1", 2);
-
-			LogTo.Debug("1");
-			LogTo.Debug("1");
-		}
-	}
-
-	static class LogTo
-	{
-		public static void Debug(string a) { }
-		public static void Info(string a, int b) { }
-		public static void Error(Exception e) { }
-	}
-
-	interface ILog
-	{
-		void Debug(string a);
-		void Info(string a, int b);
-		void Error(Exception e);
-
-		bool IsDebugEnabled { get; }
-		bool IsInfoEnabled { get; }
-		bool IsErrorEnabled { get; }
-	}
-
-	static class LogManager
-	{
-		public static ILog GetLogger(string name)
-		{
-			return null;
+			foreach (var dll in Directory.GetFiles(dir, "*.dll"))
+				RegisterAssembly(AssemblyDefinition.ReadAssembly(dll));
 		}
 	}
 }
@@ -50,7 +22,7 @@ namespace Target
 
 /* ************************************************************
  *
- *    Copyright (c) Attila Kiskó, enyim.com
+ *    Copyright (c) Attila Kisk�, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

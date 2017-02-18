@@ -4,35 +4,36 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{74D6729F-0476-4215-881A-978F4ED4048E}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{004FBC41-9ACE-4B5D-8A5E-C9911D8D29F3}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Runner</RootNamespace>
-    <AssemblyName>Runner</AssemblyName>
+    <RootNamespace>Enyim.Build.Weavers.AssemblyInfo</RootNamespace>
+    <AssemblyName>AssemblyInfo.Fody</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+  <Import Project="$(SolutionDir)\build\ProjectDefaults.targets" />
   <ItemGroup>
+    <Reference Include="ICSharpCode.NRefactory, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
+      <HintPath>..\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.dll</HintPath>
+      <ILMerge>true</ILMerge>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.NRefactory.Cecil, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
+      <HintPath>..\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Cecil.dll</HintPath>
+      <ILMerge>true</ILMerge>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.NRefactory.CSharp, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
+      <HintPath>..\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.CSharp.dll</HintPath>
+      <ILMerge>true</ILMerge>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.NRefactory.Xml, Version=5.0.0.0, Culture=neutral, PublicKeyToken=d4bfe873e7598c49, processorArchitecture=MSIL">
+      <HintPath>..\packages\ICSharpCode.NRefactory.5.5.1\lib\Net40\ICSharpCode.NRefactory.Xml.dll</HintPath>
+      <ILMerge>true</ILMerge>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Mono.Cecil, Version=0.10.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>..\packages\Mono.Cecil.0.10.0-beta2\lib\net40\Mono.Cecil.dll</HintPath>
       <Private>True</Private>
@@ -49,10 +50,6 @@
       <HintPath>..\packages\Mono.Cecil.0.10.0-beta2\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -63,47 +60,30 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ArgParser.cs" />
-    <Compile Include="ColoredConsoleLogger.cs" />
-    <Compile Include="ConsoleHelper.cs" />
-    <Compile Include="ILogger.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="ModuleWeaver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Weaver.cs" />
-    <Compile Include="WeaverAssembyResolver.cs" />
+    <Compile Include="..\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\GlobalSuppressions.cs">
+      <Link>Properties\GlobalSuppressions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EventSource\EventSource.csproj">
-      <Project>{7aeb8bdf-3088-46a2-b454-c7a9f784b51a}</Project>
-      <Name>EventSource</Name>
+    <ProjectReference Include="..\3rdparty\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj">
+      <Project>{984cc812-9470-4a13-aff9-cc44068d666c}</Project>
+      <Name>ICSharpCode.Decompiler</Name>
+      <ILMerge>true</ILMerge>
     </ProjectReference>
     <ProjectReference Include="..\Extensions\Extensions.csproj">
       <Project>{66e29c5a-5a3a-4793-acc0-9b4452adf177}</Project>
       <Name>Extensions</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LogTo\LogTo.csproj">
-      <Project>{73087402-8a83-47d8-b62d-ff50e200a604}</Project>
-      <Name>LogTo</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Target\Target.csproj">
-      <Project>{50549188-9a07-4be8-8e52-8c05de6ed807}</Project>
-      <Name>Target</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Weavers\Weavers.csproj">
-      <Project>{293733a6-03c6-48c1-96b3-bf4f86b12f81}</Project>
-      <Name>Weavers</Name>
+      <ILMerge>True</ILMerge>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+  <Import Project="$(SolutionDir)\build\Tasks.targets" />
 </Project>

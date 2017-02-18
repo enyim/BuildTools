@@ -1,56 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace Target
+namespace Runner
 {
-	public class LogTests
+	class ColoredConsoleLogger : ILogger
 	{
-		static void Main(string[] args)
+		public void Info(string message)
 		{
-			LogTo.Debug("1");
+			Log(ConsoleColor.White, "INFO ", message);
+		}
 
-			LogTo.Info("1", 2);
+		public void Warn(string message)
+		{
+			Log(ConsoleColor.Yellow, "WARN ", message);
+		}
 
-			LogTo.Debug("1");
-			LogTo.Debug("1");
+		public void Error(string message)
+		{
+			Log(ConsoleColor.Red, "ERROR", message);
+		}
+
+		private static void Log(ConsoleColor fg, string level, string message)
+		{
+			ConsoleHelper.ColoredWriteLine(fg, $"    {level} {message}");
 		}
 	}
 
-	static class LogTo
-	{
-		public static void Debug(string a) { }
-		public static void Info(string a, int b) { }
-		public static void Error(Exception e) { }
-	}
-
-	interface ILog
-	{
-		void Debug(string a);
-		void Info(string a, int b);
-		void Error(Exception e);
-
-		bool IsDebugEnabled { get; }
-		bool IsInfoEnabled { get; }
-		bool IsErrorEnabled { get; }
-	}
-
-	static class LogManager
-	{
-		public static ILog GetLogger(string name)
-		{
-			return null;
-		}
-	}
 }
 
 #region [ License information          ]
 
 /* ************************************************************
  *
- *    Copyright (c) Attila Kiskó, enyim.com
+ *    Copyright (c) Attila Kisk�, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

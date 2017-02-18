@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using Enyim.Build;
 using Mono.Cecil;
+using NDesk.Options;
 
 namespace Runner
 {
@@ -12,60 +16,63 @@ namespace Runner
 	{
 		static void Main(string[] args)
 		{
-			//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Debug\Enyim.Caching.Core.dll";
-			//var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Debug\Enyim.Caching.Memcached.dll";
-			var path = typeof(Target.CombinedTests).Assembly.Location;
-
-			var module = ModuleDefinition.ReadModule(path, new ReaderParameters { AssemblyResolver = new AR(path) });
-
-			new Weavers.LogToWeaver
+			try
 			{
-				ModuleDefinition = module,
-				LogInfo = Console.WriteLine,
-				LogWarning = Console.WriteLine,
-				LogError = Console.WriteLine
-			}.Execute();
-			new Weavers.EventSourceWeaver
-			{
-				ModuleDefinition = module,
-				LogInfo = Console.WriteLine,
-				LogWarning = Console.WriteLine,
-				LogError = Console.WriteLine
-			}.Execute();
+				var logger = new ColoredConsoleLogger();
+				var options = new Options();
+				if (options.Parse(args))
+				{
+					var weaver = new Weaver(Assembly.LoadFile(options.Weaver.FullName), logger);
+					weaver.SetProperties(options.Properties);
+					var result = weaver.Rewrite(options.Source.FullName);
 
-			module.Write("d:\\out.dll");
+					Save(result, options);
+				}
+			}
+			catch (Exception e)
+			{
+				ConsoleHelper.ColoredWriteLine(ConsoleColor.Red, e.Message);
+			}
 		}
-	}
 
-	class AR : DefaultAssemblyResolver
-	{
-		public AR(string path)
+		private static void Save(ModuleDefinition module, Options options)
 		{
-			var dir = Path.GetDirectoryName(path);
-			foreach (var dll in Directory.GetFiles(dir, "*.dll"))
-				RegisterAssembly(AssemblyDefinition.ReadAssembly(dll));
+			var key = options.KeyFile == null ? null : new StrongNameKeyPair(options.KeyFile.OpenRead());
+			var target = (options.Source ?? options.Target).FullName;
+
+			module.Write(target, new WriterParameters
+			{
+				StrongNameKeyPair = key,
+				WriteSymbols = module.HasSymbols
+			});
 		}
 
-		//public AssemblyDefinition Resolve(string fullName)
+		//static void Main2(string[] args)
 		//{
-		//	return AssemblyDefinition.ReadAssembly(Path.Combine(path, fullName));
-		//}
+		//	//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Debug\Enyim.Caching.Core.dll";
+		//	//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Release\Enyim.Caching.Core.dll";
+		//	var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Release\Enyim.Caching.Memcached.dll";
+		//	//var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Release\Enyim.Caching.Memcached.dll";
+		//	//var path = typeof(Target.CombinedTests).Assembly.Location;
 
-		//public AssemblyDefinition Resolve(AssemblyNameReference name)
-		//{
-		//	var file = Path.Combine(path, name.Name + ".dll");
+		//	var module = ModuleDefinition.ReadModule(path, new ReaderParameters { AssemblyResolver = new WeaverAssembyResolver(path) });
 
-		//	return File.Exists(file) ? AssemblyDefinition.ReadAssembly(file) : null;
-		//}
+		//	new Weavers.LogToWeaver
+		//	{
+		//		ModuleDefinition = module,
+		//		LogInfo = Console.WriteLine,
+		//		LogWarning = Console.WriteLine,
+		//		LogError = Console.WriteLine
+		//	}.Execute();
+		//	new Weavers.EventSourceWeaver
+		//	{
+		//		ModuleDefinition = module,
+		//		LogInfo = Console.WriteLine,
+		//		LogWarning = Console.WriteLine,
+		//		LogError = Console.WriteLine
+		//	}.Execute();
 
-		//public AssemblyDefinition Resolve(string fullName, ReaderParameters parameters)
-		//{
-		//	throw new NotImplementedException();
-		//}
-
-		//public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
-		//{
-		//	throw new NotImplementedException();
+		//	module.Write("d:\\out.dll");
 		//}
 	}
 }

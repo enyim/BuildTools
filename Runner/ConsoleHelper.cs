@@ -1,47 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace Target
+namespace Runner
 {
-	public class LogTests
+	static class ConsoleHelper
 	{
-		static void Main(string[] args)
+		public static void ColoredWriteLine(ConsoleColor fg, string message)
 		{
-			LogTo.Debug("1");
+			var tmp = Console.ForegroundColor;
 
-			LogTo.Info("1", 2);
-
-			LogTo.Debug("1");
-			LogTo.Debug("1");
+			Console.ForegroundColor = fg;
+			Console.WriteLine(message);
+			Console.ForegroundColor = tmp;
 		}
-	}
 
-	static class LogTo
-	{
-		public static void Debug(string a) { }
-		public static void Info(string a, int b) { }
-		public static void Error(Exception e) { }
-	}
-
-	interface ILog
-	{
-		void Debug(string a);
-		void Info(string a, int b);
-		void Error(Exception e);
-
-		bool IsDebugEnabled { get; }
-		bool IsInfoEnabled { get; }
-		bool IsErrorEnabled { get; }
-	}
-
-	static class LogManager
-	{
-		public static ILog GetLogger(string name)
+		public static void ColoredWriteLine(ConsoleColor fg, string format, params object[] args)
 		{
-			return null;
+			var tmp = Console.ForegroundColor;
+
+			Console.ForegroundColor = fg;
+			Console.WriteLine(format, args);
+			Console.ForegroundColor = tmp;
 		}
 	}
 }
@@ -50,7 +30,7 @@ namespace Target
 
 /* ************************************************************
  *
- *    Copyright (c) Attila Kiskó, enyim.com
+ *    Copyright (c) Attila Kisk�, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

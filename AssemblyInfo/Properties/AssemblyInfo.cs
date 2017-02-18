@@ -1,50 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-namespace Target
-{
-	public class LogTests
-	{
-		static void Main(string[] args)
-		{
-			LogTo.Debug("1");
-
-			LogTo.Info("1", 2);
-
-			LogTo.Debug("1");
-			LogTo.Debug("1");
-		}
-	}
-
-	static class LogTo
-	{
-		public static void Debug(string a) { }
-		public static void Info(string a, int b) { }
-		public static void Error(Exception e) { }
-	}
-
-	interface ILog
-	{
-		void Debug(string a);
-		void Info(string a, int b);
-		void Error(Exception e);
-
-		bool IsDebugEnabled { get; }
-		bool IsInfoEnabled { get; }
-		bool IsErrorEnabled { get; }
-	}
-
-	static class LogManager
-	{
-		public static ILog GetLogger(string name)
-		{
-			return null;
-		}
-	}
-}
+[assembly: AssemblyTitle("LogTo")]
+[assembly: AssemblyProduct("LogTo")]
+[assembly: AssemblyDescription("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("73087402-8a83-47d8-b62d-ff50e200a604")]
 
 #region [ License information          ]
 
