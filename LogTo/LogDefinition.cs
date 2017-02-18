@@ -6,6 +6,8 @@ using Mono.Cecil.Cil;
 
 namespace Enyim.Build.Weavers.LogTo
 {
+	using BindingFlags = System.Reflection.BindingFlags;
+
 	internal class LogDefinition
 	{
 		private readonly ModuleDefinition module;
@@ -13,6 +15,7 @@ namespace Enyim.Build.Weavers.LogTo
 		private readonly Dictionary<string, MethodReference> guardProperties;
 		private readonly TypeDefinition logTo;
 		private readonly TypeDefinition ilog;
+		private readonly MethodReference getTypeFromHandle;
 
 		public LogDefinition(ModuleDefinition module)
 		{
@@ -25,6 +28,7 @@ namespace Enyim.Build.Weavers.LogTo
 
 			ilogMap = GetILogMap(module, logTo, ilog);
 			guardProperties = GetGuardProperties(module, ilog);
+			getTypeFromHandle = module.ImportReference(typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
 
 			IsValid = true;
 		}
@@ -39,7 +43,7 @@ namespace Enyim.Build.Weavers.LogTo
 				if (matching == null)
 					throw new InvalidOperationException($"Cannot find matching method in {ilog} for {m}");
 
-				retval.Add(m.ToString(), module.Import(matching));
+				retval.Add(m.ToString(), module.ImportReference(matching));
 			}
 
 			return retval;
@@ -59,7 +63,7 @@ namespace Enyim.Build.Weavers.LogTo
 					throw new InvalidOperationException($"Property {p} does not have a getter");
 
 				var name = p.Name.Substring(2, p.Name.Length - 9);
-				retval.Add(name, module.Import(getter));
+				retval.Add(name, module.ImportReference(getter));
 			}
 
 			return retval;
@@ -75,7 +79,7 @@ namespace Enyim.Build.Weavers.LogTo
 
 			var type = modules.SelectMany(m => m.IncludeReferencedTypes()).FirstOrDefault(t => t.Name == name);
 			if (type != null)
-				return module.Import(type).Resolve();
+				return module.ImportReference(type).Resolve();
 
 			if (shouldThrow)
 				throw new InvalidOperationException($"Could not find type reference {name}");
@@ -92,13 +96,14 @@ namespace Enyim.Build.Weavers.LogTo
 			if (retval != null)
 				return retval;
 
-			return typeDef.DeclareStaticField(this.module, module.Import(ilog), "<>log", () =>
+			return typeDef.DeclareStaticField(this.module, module.ImportReference(ilog), "<>log", () =>
 			{
-				var factory = module.Import(ResolveByName("LogManager", true).FindMethod("GetLogger", module.TypeSystem.String));
+				var factory = module.ImportReference(ResolveByName("LogManager", true).Methods.First(m => m.Name == "GetLogger"));
 
 				return new[]
 				{
-					Instruction.Create(OpCodes.Ldstr, typeDef.FullName),
+					Instruction.Create(OpCodes.Ldtoken, typeDef),
+					Instruction.Create(OpCodes.Call, getTypeFromHandle),
 					Instruction.Create(OpCodes.Call, factory)
 				};
 			}, FieldAttributes.Private);
