@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -9,8 +9,6 @@ namespace Enyim.Build.Weavers.EventSource
 	internal class EventSourceTemplate
 	{
 		protected const string GuardPrefix = "Can";
-		private const int MinTask = 11;
-		private const int MaxTask = 238;
 		protected static readonly HashSet<string> SpecialMethods = new HashSet<string>(new[] { "IsEnabled" });
 
 		private readonly Lazy<IReadOnlyList<LogMethod>> loggers;
@@ -37,13 +35,10 @@ namespace Enyim.Build.Weavers.EventSource
 		public TypeDefinition Tasks { get; }
 		public TypeDefinition Opcodes { get; }
 
-		public IReadOnlyList<LogMethod> Loggers { get { return loggers.Value; } }
-		public IReadOnlyList<GuardMethod> Guards { get { return guards.Value; } }
+		public IReadOnlyList<LogMethod> Loggers => loggers.Value;
+		public IReadOnlyList<GuardMethod> Guards => guards.Value;
 
-		private static TypeDefinition GetNamedNestedType(TypeDefinition type, string name)
-		{
-			return type.NestedTypes.FirstOrDefault(n => n.Name == name);
-		}
+		private static TypeDefinition GetNamedNestedType(TypeDefinition type, string name) => type.NestedTypes.FirstOrDefault(n => n.Name == name);
 
 		protected virtual IEnumerable<LogMethod> GetLogMethods()
 		{
@@ -73,10 +68,7 @@ namespace Enyim.Build.Weavers.EventSource
 			return all;
 		}
 
-		protected virtual bool IsLogMethod(MethodDefinition m)
-		{
-			return (!m.IsSpecialName && !IsGuardMethod(m)) && !SpecialMethods.Contains(m.Name);
-		}
+		protected virtual bool IsLogMethod(MethodDefinition m) => !m.IsSpecialName && !IsGuardMethod(m) && !SpecialMethods.Contains(m.Name);
 
 		protected virtual IEnumerable<GuardMethod> GetGuardMethods()
 		{
@@ -84,9 +76,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			foreach (var g in Type.Methods.Where(IsGuardMethod))
 			{
-				LogMethod lm;
-
-				if (loggersByName.TryGetValue(g.Name.Substring("Can".Length), out lm))
+				if (loggersByName.TryGetValue(g.Name.Substring("Can".Length), out var lm))
 				{
 					var guard = new GuardMethod
 					{
@@ -100,10 +90,7 @@ namespace Enyim.Build.Weavers.EventSource
 			}
 		}
 
-		protected virtual bool IsGuardMethod(MethodDefinition m)
-		{
-			return m.Name.StartsWith("Can", StringComparison.Ordinal);
-		}
+		protected virtual bool IsGuardMethod(MethodDefinition m) => m.Name.StartsWith("Can", StringComparison.Ordinal);
 
 		private void TryGenerateTasks(IEnumerable<LogMethod> methods)
 		{
@@ -132,9 +119,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			foreach (var a in toFix)
 			{
-				int id;
-
-				a.Log.Task = !knownTasks.TryGetValue(a.Task, out id)
+				a.Log.Task = !knownTasks.TryGetValue(a.Task, out var id)
 								? new NamedConst<int>(a.Task, knownTasks[a.Task] = maxTask++)
 								: new NamedConst<int>(a.Task, id) { Exists = true };
 
@@ -151,14 +136,6 @@ namespace Enyim.Build.Weavers.EventSource
 			return type.Fields
 						.Where(f => f.IsStatic && f.HasConstant)
 						.ToDictionary(f => f.Name, f => (T)f.Constant);
-		}
-
-		private static TValue GetOrCreate<TKey, TValue>(Dictionary<TKey, TValue> dict, TKey key, Func<TValue> factory)
-		{
-			TValue obj;
-			return !dict.TryGetValue(key, out obj)
-					? dict[key] = factory()
-					: obj;
 		}
 
 		private int MaxConst(TypeDefinition type, string constType)

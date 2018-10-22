@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -34,8 +34,10 @@ namespace Enyim.Build.Weavers.EventSource
 			var builder = new AbstractEventSourceBuilder(ModuleDefinition);
 
 			foreach (var t in types)
+			{
 				if (t.IsAbstract && t.BaseType?.Name == "EventSource")
 					yield return builder.Implement(t);
+			}
 		}
 
 		private IEnumerable<ImplementedEventSource> ImplementStatic(TypeDefinition[] types)
@@ -43,10 +45,14 @@ namespace Enyim.Build.Weavers.EventSource
 			var builder = new StaticEventSourceBuilder(ModuleDefinition);
 
 			foreach (var t in types)
+			{
 				if (t.IsAbstract
 						&& t.IsSealed
 						&& t.CustomAttributes.Named("EventSourceAttribute") != null)
+				{
 					yield return builder.Implement(t);
+				}
+			}
 		}
 
 		private IEnumerable<ImplementedEventSource> ImplementInterfaces(TypeDefinition[] types)

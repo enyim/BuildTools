@@ -1,13 +1,11 @@
-﻿using System;
+using System;
 
 namespace Enyim.Build.Weavers.EventSource
 {
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 	internal sealed class OrderAttribute : Attribute
 	{
-		public OrderAttribute(int order)
-		{
-			Order = order;
-		}
+		public OrderAttribute(int order) => Order = order;
 
 		public int Order { get; }
 	}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -10,6 +10,8 @@ namespace Enyim.Build.Weavers.LogTo
 
 	internal class LogDefinition
 	{
+		public const string LogToClassName = "LogTo";
+
 		private readonly ModuleDefinition module;
 		private readonly Dictionary<string, MethodReference> ilogMap;
 		private readonly Dictionary<string, MethodReference> guardProperties;
@@ -21,7 +23,7 @@ namespace Enyim.Build.Weavers.LogTo
 		{
 			this.module = module;
 
-			logTo = ResolveByName("LogTo", false);
+			logTo = ResolveByName(LogToClassName, false);
 			ilog = ResolveByName("ILog", false);
 
 			if (logTo == null || ilog == null) return;
@@ -93,10 +95,8 @@ namespace Enyim.Build.Weavers.LogTo
 				typeDef = typeDef.DeclaringType;
 
 			var retval = typeDef.Fields.FirstOrDefault(f => f.Name == "<>log");
-			if (retval != null)
-				return retval;
 
-			return typeDef.DeclareStaticField(this.module, module.ImportReference(ilog), "<>log", () =>
+			return retval ?? typeDef.DeclareStaticField(module, module.ImportReference(ilog), "<>log", () =>
 			{
 				var factory = module.ImportReference(ResolveByName("LogManager", true).Methods.First(m => m.Name == "GetLogger"));
 
@@ -109,30 +109,19 @@ namespace Enyim.Build.Weavers.LogTo
 			}, FieldAttributes.Private);
 		}
 
-		public MethodReference MapToILog(MethodReference md)
-		{
-			return ilogMap[md.ToString()];
-		}
+		public MethodReference MapToILog(MethodReference md) => ilogMap[md.ToString()];
 
-		public MethodReference MapToILog(Instruction instruction)
-		{
-			return MapToILog((MethodReference)instruction.Operand);
-		}
+		public MethodReference MapToILog(Instruction instruction) => MapToILog((MethodReference)instruction.Operand);
 
 		public MethodReference FindGuard(MethodReference md)
 		{
-			MethodReference retval;
-
-			if (!guardProperties.TryGetValue(md.Name, out retval))
+			if (!guardProperties.TryGetValue(md.Name, out var retval))
 				throw new InvalidOperationException($"Method {md} does not have a guard property defined in {ilog}");
 
 			return retval;
 		}
 
-		public MethodReference FindGuard(Instruction instruction)
-		{
-			return FindGuard((MethodReference)instruction.Operand);
-		}
+		public MethodReference FindGuard(Instruction instruction) => FindGuard((MethodReference)instruction.Operand);
 
 		private static MethodDefinition FindMatching(MethodDefinition what, TypeDefinition where)
 		{
@@ -141,21 +130,13 @@ namespace Enyim.Build.Weavers.LogTo
 			return where.Methods.FirstOrDefault(m => (m.Name == what.Name) && LogDefinition.GetParams(m).SequenceEqual(find));
 		}
 
-		public static bool IsLogger(Instruction i)
-		{
-			return (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt)
-					&& ((MemberReference)i.Operand).DeclaringType.Name == "LogTo";
-		}
+		public static bool IsLogger(Instruction i) => (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt) && ((MemberReference)i.Operand).DeclaringType.Name == LogToClassName;
 
-		public static bool IsLogger(MethodReference m)
-		{
-			return m.DeclaringType.Name == "LogTo";
-		}
+		public static bool IsLogger(ICSharpCode.Decompiler.IL.CallInstruction i) => i.Method.DeclaringType.Name == LogToClassName;
 
-		private static IEnumerable<string> GetParams(MethodDefinition md)
-		{
-			return md.Parameters.Select(p => p.ParameterType.FullName);
-		}
+		public static bool IsLogger(MethodReference m) => m.DeclaringType.Name == LogToClassName;
+
+		private static IEnumerable<string> GetParams(MethodDefinition md) => md.Parameters.Select(p => p.ParameterType.FullName);
 	}
 }
 

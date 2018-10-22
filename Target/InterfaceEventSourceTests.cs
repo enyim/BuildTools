@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -28,6 +28,7 @@ namespace Target
 		}
 	}
 
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
 	sealed class AsEventSourceAttribute : Attribute
 	{
 		public string Name { get; set; }

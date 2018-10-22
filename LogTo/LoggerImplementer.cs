@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -24,71 +24,30 @@ namespace Enyim.Build.Weavers.LogTo
 
 		public bool TryRewrite()
 		{
-			if (!this.logDef.IsValid) return false;
+			if (!logDef.IsValid) return false;
 
-			var methods = GetMethods().ToArray();
+			var methods = typeDef.Methods
+									.Where(m => m.HasBody && m.Body.Instructions.Any(LogDefinition.IsLogger))
+									.ToArray();
 			if (methods.Length == 0) return false;
 
 			var logger = logDef.DeclareLogger(typeDef);
 
 			foreach (var method in methods)
 			{
-				DeclareExceptionsForLoggers(method);
 				RewriteCalls(method, logger);
 			}
 
 			return true;
 		}
 
-		private IEnumerable<MethodDefinition> GetMethods()
-		{
-			return typeDef.Methods.Where(m => m.HasBody && m.Body.Instructions.Any(LogDefinition.IsLogger));
-		}
-
-		private void DeclareExceptionsForLoggers(MethodDefinition method)
-		{
-			if (!method.Body.HasExceptionHandlers) return;
-
-			// in release builds if the LogTo.Error (or similar) immediately follows the catch(E) block
-			// the compiler will not declare a local variable for the exception (as the catch block already has it on stack)
-			// which messes up the call analyzer
-			// in these cases, we introduce a local variable for the exception
-			var calls = method.GetOpsOf(OpCodes.Call, OpCodes.Callvirt).Where(LogDefinition.IsLogger).ToArray();
-
-			if (calls.Length > 0)
-			{
-				var ilp = method.Body.GetILProcessor();
-
-				var ehToFix = method.Body
-									.ExceptionHandlers
-									.Where(eh => eh.HandlerType == ExceptionHandlerType.Catch
-													&& calls.Any(c => eh.HandlerStart.Offset <= c.Offset
-																		&& c.Offset <= eh.HandlerEnd.Offset))
-									.ToArray();
-
-				foreach (var eh in ehToFix)
-				{
-					var local = new VariableDefinition(eh.CatchType);
-					method.Body.Variables.Add(local);
-
-					var stloc = Instruction.Create(OpCodes.Stloc, local);
-					ilp.InsertBefore(eh.HandlerStart, stloc);
-					ilp.InsertBefore(eh.HandlerStart, Instruction.Create(OpCodes.Ldloc, local));
-					eh.HandlerStart = stloc;
-					eh.TryEnd = stloc;
-				}
-
-				method.Body.OptimizeMacros();
-			}
-		}
-
 		private void RewriteCalls(MethodDefinition method, FieldDefinition logger)
 		{
-			var callCollector = new CallCollector(this.module);
-			var calls = callCollector.FindCalls(method, LogDefinition.IsLogger);
-			var collapsed = callCollector.CollapseBlocks(calls, new SameMethodComparer());
+			var callCollector = new CallCollector(module);
+			var calls = callCollector.Collect(method, LogDefinition.IsLogger);
+			var collapsed = calls.SplitToSequences(new SameMethodComparer()).ToList();
 
-			if (collapsed.Length > 0)
+			if (collapsed.Count > 0)
 			{
 				LogInfo($"Rewriting {method.FullName}");
 
@@ -96,43 +55,38 @@ namespace Enyim.Build.Weavers.LogTo
 				{
 					foreach (var callGroup in collapsed)
 					{
-						var start = callGroup.Start;
+						var start = callGroup.First().StartsAt;
 						var label = builder.DefineLabel();
-						var end = callGroup.Calls.First().End;
+						var end = callGroup.Last().Call;
 
 						builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, logger));
-						builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, this.logDef.FindGuard(end)));
+						builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, logDef.FindGuard(end)));
 						builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
 
 						var logMethod = logDef.MapToILog(end);
 
-						foreach (var call in callGroup.Calls)
+						foreach (var call in callGroup)
 						{
-							builder.InsertBefore(call.Start, Instruction.Create(OpCodes.Ldsfld, logger));
+							builder.InsertBefore(call.StartsAt, Instruction.Create(OpCodes.Ldsfld, logger));
 
-							call.End.OpCode = OpCodes.Callvirt;
-							call.End.Operand = logMethod;
+							call.Call.OpCode = OpCodes.Callvirt;
+							call.Call.Operand = logMethod;
 						}
 
-						builder.InsertAfter(callGroup.End, label);
+						builder.InsertAfter(end, label);
 					}
 				}
 			}
 		}
 
-		private class SameMethodComparer : IEqualityComparer<Instruction>
+		private class SameMethodComparer : CallSequenceComparer
 		{
-			public bool Equals(Instruction x, Instruction y)
+			protected override bool IsConsecutive(Instruction left, Instruction right)
 			{
-				if (x.OpCode.FlowControl == FlowControl.Call && y.OpCode.FlowControl == FlowControl.Call)
-					return ((MemberReference)x.Operand).FullName == ((MemberReference)y.Operand).FullName;
+				if (left.OpCode.FlowControl == FlowControl.Call && right.OpCode.FlowControl == FlowControl.Call)
+					return ((MemberReference)left.Operand).FullName == ((MemberReference)right.Operand).FullName;
 
 				return false;
-			}
-
-			public int GetHashCode(Instruction obj)
-			{
-				return obj.ToString().GetHashCode();
 			}
 		}
 	}

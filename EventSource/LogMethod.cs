@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using Mono.Cecil;
@@ -14,11 +14,11 @@ namespace Enyim.Build.Weavers.EventSource
 			EventAttribute = a;
 			if (a == null) return;
 
-			Id = (int)a.ConstructorArguments.First().Value;
+			Id = (int)a.ConstructorArguments[0].Value;
 			Level = LogMethod.GetProp<EventLevel, EventLevel?>(a, "Level", v => v);
 			Keywords = LogMethod.GetProp<EventKeywords, EventKeywords?>(a, "Keywords", v => v);
-			Task = LogMethod.GetProp<EventTask, NamedConst<int>>(a, "Task", v => NamedConst.Existing<int>(v.ToString(), (int)v));
-			Opcode = LogMethod.GetProp<EventOpcode, NamedConst<int>>(a, "Opcode", v => NamedConst.Existing<int>(v.ToString(), (int)v));
+			Task = LogMethod.GetProp<EventTask, NamedConst<int>>(a, "Task", v => NamedConst.Existing(v.ToString(), (int)v));
+			Opcode = LogMethod.GetProp<EventOpcode, NamedConst<int>>(a, "Opcode", v => NamedConst.Existing(v.ToString(), (int)v));
 
 			if (Task != null) Log.Info($"LM: {method} {Task.Name}={Task.Value} - exists: {Task.Exists}");
 			if (Opcode != null) Log.Info($"LM: {method} {Opcode.Name}={Opcode.Value} - exists: {Opcode.Exists}");
@@ -33,17 +33,11 @@ namespace Enyim.Build.Weavers.EventSource
 		public NamedConst<int> Opcode { get; set; }
 		public NamedConst<int> Task { get; set; }
 
-		public bool HasLevel { get { return Level.HasValue; } }
-		public bool HasKeywords { get { return Keywords.HasValue; } }
+		public bool HasLevel => Level.HasValue;
+		public bool HasKeywords => Keywords.HasValue;
 
 		private static V GetProp<T, V>(CustomAttribute a, string name, Func<T, V> setter)
-		{
-			T retval;
-
-			return a.TryGetPropertyValue<T>(name, out retval)
-					? setter(retval)
-					: default(V);
-		}
+			=> a.TryGetPropertyValue<T>(name, out var retval) ? setter(retval) : default;
 	}
 }
 

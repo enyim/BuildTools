@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -11,9 +11,9 @@ namespace Enyim.Build.Weavers.EventSource
 
 	internal class UnsafeWriteEventBuilder
 	{
-		private static MethodInfo RuntimeHelpers_OffsetToStringData_Get = typeof(System.Runtime.CompilerServices.RuntimeHelpers).GetProperty("OffsetToStringData").GetGetMethod();
-		private static MethodInfo IntPtr_Op_Explicit = typeof(System.IntPtr).GetMethod("op_Explicit", new[] { typeof(void*) });
-		private static MethodInfo String_Length_Get = typeof(String).GetProperty("Length").GetGetMethod();
+		private static readonly MethodInfo RuntimeHelpers_OffsetToStringData_Get = typeof(System.Runtime.CompilerServices.RuntimeHelpers).GetProperty("OffsetToStringData").GetGetMethod();
+		private static readonly MethodInfo IntPtr_Op_Explicit = typeof(System.IntPtr).GetMethod("op_Explicit", new[] { typeof(void*) });
+		private static readonly MethodInfo String_Length_Get = typeof(string).GetProperty("Length").GetGetMethod();
 
 		private readonly ModuleDefinition module;
 		private readonly IEventSourceTypeDefs typeDefs;
@@ -36,12 +36,9 @@ namespace Enyim.Build.Weavers.EventSource
 			supportedTypes = new HashSet<string>(emitters.Keys);
 		}
 
-		public bool CanDo(MethodDefinition method)
-		{
-			return method.Parameters
+		public bool CanDo(MethodDefinition method) => method.Parameters
 						.Select(ResolveFullName)
 						.All(p => supportedTypes.Contains(p));
-		}
 
 		private static string ResolveFullName(ParameterDefinition p)
 		{
@@ -59,8 +56,8 @@ namespace Enyim.Build.Weavers.EventSource
 			var parameters = method.Parameters;
 			var count = parameters.Count;
 
-			var data = builder.DeclareLocal(typeDefs.EventDataRef.MakePointerType(), "data");
-			var item = builder.DeclareLocal(typeDefs.EventDataRef.MakePointerType(), "item");
+			var data = builder.DeclareLocal(typeDefs.EventDataRef.MakePointerType());
+			var item = builder.DeclareLocal(typeDefs.EventDataRef.MakePointerType());
 
 			////> EventData* data = stackalloc EventData[4];
 			yield return Instruction.Create(OpCodes.Ldc_I4, count);

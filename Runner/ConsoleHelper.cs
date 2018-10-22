@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Runner
 {
-	static class ConsoleHelper
+	internal static class ConsoleHelper
 	{
 		public static void ColoredWriteLine(ConsoleColor fg, string message)
 		{
@@ -30,7 +30,7 @@ namespace Runner
 
 /* ************************************************************
  *
- *    Copyright (c) Attila Kiskó, enyim.com
+ *    Copyright (c) Attila KiskÃ³, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

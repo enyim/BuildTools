@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Mono.Cecil;
 
@@ -18,6 +18,7 @@ namespace Enyim.Build.Weavers.EventSource
 			BaseTypeImpl = type.BaseType.Resolve();
 
 			var sourceModule = BaseTypeImpl.Module;
+
 			EventLevel = sourceModule.FindType(ns + "EventLevel").ImportInto(module);
 			EventKeywords = sourceModule.FindType(ns + "EventKeywords").ImportInto(module);
 			EventOpcode = sourceModule.FindType(ns + "EventOpcode").ImportInto(module);

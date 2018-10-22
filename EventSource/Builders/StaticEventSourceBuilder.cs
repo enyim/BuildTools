@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Mono.Cecil;
 
@@ -8,14 +8,9 @@ namespace Enyim.Build.Weavers.EventSource
 	{
 		public StaticEventSourceBuilder(ModuleDefinition module) : base(module) { }
 
-		protected override bool EmitGuardedLoggers { get { return false; } }
-
 		public StaticBasedEventSource Implement(TypeDefinition template)
 		{
 			var previous = DoImplement(template);
-
-			// rename the old class as the new one will have the same name
-			previous.Old.Name += "_" + Guid.NewGuid().ToString("N");
 			previous.Old.CopyAttrsTo(previous.New);
 
 			var retval = new StaticBasedEventSource
@@ -28,34 +23,19 @@ namespace Enyim.Build.Weavers.EventSource
 			return retval;
 		}
 
-		protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template)
-		{
-			return new StaticTemplate(template, TypeDefs);
-		}
+		protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new StaticTemplate(template, TypeDefs);
 
-		protected override string GetTargetTypeName(TypeDefinition template)
-		{
-			return template.Name;
-		}
+		protected override string GetTargetTypeName(TypeDefinition template) => template.Name;
 
-		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName)
-		{
-			return template.NestedTypes.FirstOrDefault(t => t.Name == nestedName);
-		}
+		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName) => template.NestedTypes.FirstOrDefault(t => t.Name == nestedName);
 
 		private class StaticTemplate : EventSourceTemplate
 		{
 			public StaticTemplate(TypeDefinition type, IEventSourceTypeDefs typeDefs) : base(type, typeDefs) { }
 
-			protected override bool IsLogMethod(MethodDefinition m)
-			{
-				return base.IsLogMethod(m) && m.IsStatic;
-			}
+			protected override bool IsLogMethod(MethodDefinition m) => base.IsLogMethod(m) && m.IsStatic;
 
-			protected override bool IsGuardMethod(MethodDefinition m)
-			{
-				return base.IsGuardMethod(m) && m.IsStatic;
-			}
+			protected override bool IsGuardMethod(MethodDefinition m) => base.IsGuardMethod(m) && m.IsStatic;
 		}
 	}
 }

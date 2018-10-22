@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 
@@ -11,13 +11,11 @@ namespace Enyim.Build.Weavers.EventSource
 		public T New;
 
 		public static Implemented<T> Create(T old, T @new)
-		{
-			return new Implemented<T>()
+			=> new Implemented<T>()
 			{
 				New = @new,
 				Old = old
 			};
-		}
 	}
 
 	internal class ImplementedEventSource : Implemented<TypeDefinition>
@@ -33,13 +31,11 @@ namespace Enyim.Build.Weavers.EventSource
 	internal static class Implemented
 	{
 		public static Implemented<T> Create<T>(T old, T @new)
-		{
-			return new Implemented<T>()
+			=> new Implemented<T>()
 			{
 				New = @new,
 				Old = old
 			};
-		}
 	}
 }
 

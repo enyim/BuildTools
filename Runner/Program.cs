@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,10 +12,13 @@ using NDesk.Options;
 
 namespace Runner
 {
-	class Program
+	internal static class Program
 	{
-		static void Main(string[] args)
+		private static void Main(string[] args)
 		{
+			args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -w Enyim.Build.Rewriters.LogTo.dll".Split(' ');
+			args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -w Enyim.Build.Rewriters.EventSource.dll".Split(' ');
+
 			try
 			{
 				var logger = new ColoredConsoleLogger();
@@ -38,7 +41,7 @@ namespace Runner
 		private static void Save(ModuleDefinition module, Options options)
 		{
 			var key = options.KeyFile == null ? null : new StrongNameKeyPair(options.KeyFile.OpenRead());
-			var target = (options.Source ?? options.Target).FullName;
+			var target = (options.Target ?? options.Source).FullName;
 
 			module.Write(target, new WriterParameters
 			{

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -40,17 +40,22 @@ namespace Target
 
 			try
 			{
-				LogTo.Debug("a");
+				LogTo.Info("a", 2);
 			}
-			catch (InvalidCastException e1) { LogTo.Error(e1); }
+			catch (InvalidCastException e1) { LogTo.Warn(e1); }
 			catch (Exception e2) { LogTo.Error(e2); }
 
 			try
 			{
 				LogTo.Debug("5");
+				LogTo.Debug("6");
 			}
-			catch (InvalidCastException e1) { LogTo.Error(e1); }
-			catch (Exception e2) { LogTo.Error(e2); }
+			catch (InvalidCastException e1) { LogTo.Warn(e1); }
+			catch (Exception e2)
+			{
+				LogTo.Error(e2);
+				LogTo.Error(e2);
+			}
 		}
 
 		public async Task Lofasz()

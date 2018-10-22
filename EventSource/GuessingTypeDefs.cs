@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -74,9 +74,10 @@ namespace Enyim.Build.Weavers.EventSource
 		}
 
 		private static TypeReference ImportOne(ModuleDefinition target, ModuleDefinition source, string name, params string[] namespaces)
-		{
-			return namespaces.Select(n => source.FindType(n + "." + name)).First(t => t != null).ImportInto(target);
-		}
+			=> namespaces
+					.Select(n => source.FindType(n + "." + name))
+					.First(t => t != null)
+					.ImportInto(target);
 	}
 }
 

@@ -1,14 +1,32 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Mono.Cecil;
 
-namespace Weavers
+namespace Enyim.Build
 {
-	public class EventSourceWeaver : Enyim.Build.Weavers.EventSource.ModuleWeaver
+	public static class EnumerableExtensions
 	{
+		public static IEnumerable<T> Once<T>(this T item) { yield return item; }
+
+		public static IEnumerable<IEnumerable<T>> SplitToSequences<T>(this IEnumerable<T> source, ISequenceComparer<T> comparer)
+		{
+			var retval = new List<List<T>>();
+			List<T> currentSequence = null;
+
+			foreach (var item in source)
+			{
+				if (currentSequence != null && comparer.IsConsecutive(currentSequence.Last(), item))
+				{
+					currentSequence.Add(item);
+					continue;
+				}
+
+				currentSequence = new List<T> { item };
+				retval.Add(currentSequence);
+			}
+
+			return retval;
+		}
 	}
 }
 

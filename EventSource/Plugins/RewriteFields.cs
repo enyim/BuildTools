@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -14,9 +14,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			foreach (var f in module.Types.IncludeNestedTypes().SelectMany(t => t.Fields))
 			{
-				InterfaceBasedEventSource target;
-
-				if (implMap.TryGetValue(f.FieldType.FullName, out target))
+				if (implMap.TryGetValue(f.FieldType.FullName, out var target))
 					f.FieldType = target.New;
 			}
 		}

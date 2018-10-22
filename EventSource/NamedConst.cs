@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 
 namespace Enyim.Build.Weavers.EventSource
@@ -20,12 +20,7 @@ namespace Enyim.Build.Weavers.EventSource
 	internal static class NamedConst
 	{
 		public static NamedConst<T> Existing<T>(string name, T value)
-		{
-			return new NamedConst<T>(name, value)
-			{
-				Exists = true
-			};
-		}
+			=> new NamedConst<T>(name, value) { Exists = true };
 	}
 }
 

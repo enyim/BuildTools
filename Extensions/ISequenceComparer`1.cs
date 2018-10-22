@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Mono.Cecil;
 
-namespace Weavers
+namespace Enyim.Build
 {
-	public class LogToWeaver : Enyim.Build.Weavers.LogTo.ModuleWeaver
+	public interface ISequenceComparer<T>
 	{
+		bool IsConsecutive(T left, T right);
 	}
 }
 

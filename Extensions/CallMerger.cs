@@ -1,12 +1,27 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Mono.Cecil.Cil;
 
-[assembly: AssemblyTitle("Extensions")]
-[assembly: AssemblyProduct("Extensions")]
-[assembly: AssemblyDescription("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("66e29c5a-5a3a-4793-acc0-9b4452adf177")]
+namespace Enyim.Build
+{
+	public abstract class CallSequenceComparer : ISequenceComparer<CallCollector.CallInfo>
+	{
+		public bool IsConsecutive(CallCollector.CallInfo left, CallCollector.CallInfo right)
+		{
+			var afterX = left.Call.Next;
+
+			// nopos between the two call do not matter
+			while (afterX != null && afterX.OpCode == OpCodes.Nop)
+				afterX = afterX.Next;
+
+			// there are no (meaningful) ops between the two calls, they can be potentially merged into the same sequence
+			return (afterX.Offset == right.StartsAt.Offset) && IsConsecutive(left.Call, right.Call);
+		}
+
+		protected abstract bool IsConsecutive(Instruction left, Instruction right);
+	}
+}
 
 #region [ License information          ]
 

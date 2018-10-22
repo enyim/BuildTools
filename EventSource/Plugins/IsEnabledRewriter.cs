@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -19,7 +19,7 @@ namespace Enyim.Build.Weavers.EventSource
 							 New = l.New.BaseType.Resolve().FindMethod("IsEnabled").ImportInto(module)
 						 };
 
-			var fixMap = Enumerable.ToDictionary(source, a => a.Old.FullName, a => a.New);
+			var fixMap = source.ToDictionary(a => a.Old.FullName, a => a.New);
 			if (fixMap.Count == 0) return;
 
 			var allMethods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
@@ -28,10 +28,8 @@ namespace Enyim.Build.Weavers.EventSource
 			{
 				foreach (var instruction in method.GetOpsOf(OpCodes.Callvirt).ToArray())
 				{
-					MethodReference impl;
-					var target = instruction.Operand as MethodReference;
-
-					if (target != null && fixMap.TryGetValue(target.FullName, out impl))
+					if (instruction.Operand is MethodReference target
+						&& fixMap.TryGetValue(target.FullName, out var impl))
 					{
 						instruction.OpCode = OpCodes.Call;
 						instruction.Operand = impl;

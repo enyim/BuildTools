@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
@@ -9,18 +10,24 @@ namespace Enyim.Build
 {
 	public class BodyBuilder : IDisposable
 	{
-		private MethodBody body;
-		private HashSet<Instruction> labels;
+		private readonly MethodBody body;
+		private readonly Collection<Instruction> instructions;
+
+		private readonly HashSet<Instruction> labels;
+		private readonly Dictionary<string, VariableDefinition> variables;
+		private readonly Dictionary<int, Instruction> byOffset;
 
 		public BodyBuilder(MethodDefinition method) : this(method.Body) { }
-
-		public Collection<Instruction> Instructions { get; }
 
 		public BodyBuilder(MethodBody body)
 		{
 			this.body = body;
+			instructions = body.Instructions;
+
 			labels = new HashSet<Instruction>();
-			Instructions = body.Instructions;
+			variables = new Dictionary<string, VariableDefinition>();
+
+			byOffset = instructions.ToDictionary(i => i.Offset);
 
 			// converts (amongst others) all short jumps into long ones
 			// making sure that when a large amount of code is inserted the
@@ -46,14 +53,30 @@ namespace Enyim.Build
 			body.OptimizeMacros();
 		}
 
-		public void InsertBefore(Instruction where, Instruction what)
+		public Instruction DefineLabel()
 		{
-			Instructions.Insert(Instructions.IndexOf(where), what);
+			var nop = Instruction.Create(OpCodes.Nop);
+			labels.Add(nop);
+
+			return nop;
 		}
 
-		public void InsertAfter(Instruction where, Instruction what)
+		public Instruction GetAtOffset(int offset) => byOffset[offset];
+		public void InsertBefore(Instruction where, Instruction what) => instructions.Insert(instructions.IndexOf(where), what);
+		public void InsertAfter(Instruction where, Instruction what) => instructions.Insert(instructions.IndexOf(where) + 1, what);
+
+		public VariableDefinition DeclareLocal(TypeReference type, bool reusable = false)
 		{
-			Instructions.Insert(Instructions.IndexOf(where) + 1, what);
+			if (reusable && variables.TryGetValue(type.FullName, out var retval))
+				return retval;
+
+			retval = new VariableDefinition(type);
+			body.Variables.Add(retval);
+
+			if (reusable)
+				variables[type.FullName] = retval;
+
+			return retval;
 		}
 
 		private void UnlabelizeJumps()
@@ -63,60 +86,34 @@ namespace Enyim.Build
 			// essentially removing the placeholder ops we inserted earlier
 			foreach (var instruction in body.Instructions)
 			{
-				var target = instruction.Operand as Instruction;
-				if (target != null)
+				switch (instruction.Operand)
 				{
-					if (labels.Contains(target))
-						instruction.Operand = GetNextNonLabel(target);
-				}
-				else
-				{
-					var targets = instruction.Operand as Instruction[];
-					if (targets != null)
-					{
+					case Instruction target:
+						if (labels.Contains(target))
+							instruction.Operand = GetNextNonLabel(target);
+						break;
+
+					case Instruction[] targets:
 						for (var i = 0; i < targets.Length; i++)
 						{
 							var target2 = targets[i];
 							if (labels.Contains(target2))
 								targets[i] = GetNextNonLabel(target2);
 						}
-					}
+						break;
 				}
 			}
 		}
 
+		#region [ Label helpers                ]
+
 		private Instruction GetNextNonLabel(Instruction op)
 		{
+			// gets the next instruction after a label ('nop')
 			while (op != null && labels.Contains(op))
 				op = op.Next;
 
 			return op;
-		}
-
-		public Instruction DefineLabel()
-		{
-			var nop = Instruction.Create(OpCodes.Nop);
-			labels.Add(nop);
-
-			return nop;
-		}
-
-		private Dictionary<string, VariableDefinition> localCache = new Dictionary<string, VariableDefinition>();
-
-		public VariableDefinition DeclareLocal(TypeReference type, string name = null, bool reusable = false)
-		{
-			VariableDefinition retval;
-
-			if (reusable && localCache.TryGetValue(type.FullName, out retval))
-				return retval;
-
-			retval = new VariableDefinition(type);
-			body.Variables.Add(retval);
-
-			if (reusable)
-				localCache[type.FullName] = retval;
-
-			return retval;
 		}
 
 		private Instruction GetMeALabel()
@@ -129,7 +126,6 @@ namespace Enyim.Build
 
 		private void LabelizeJumps()
 		{
-			var ilp = body.GetILProcessor();
 			Instruction nop;
 
 			// jump (call, branch, switch etc) ops have an Instruction as Operand (the target)
@@ -137,25 +133,22 @@ namespace Enyim.Build
 			// to make inserting labels and op blocks easier without changing the flow of the method
 			foreach (var op in body.Instructions.ToArray())
 			{
-				var target = op.Operand as Instruction;
-				if (target != null)
+				switch (op.Operand)
 				{
-					nop = GetMeALabel();
-					op.Operand = nop;
-					ilp.InsertBefore(target, nop);
-				}
-				else
-				{
-					var targets = op.Operand as Instruction[];
-					if (targets != null)
-					{
+					case Instruction target:
+						nop = GetMeALabel();
+						op.Operand = nop;
+						InsertBefore(target, nop);
+						break;
+
+					case Instruction[] targets:
 						for (var i = 0; i < targets.Length; i++)
 						{
 							nop = GetMeALabel();
-							ilp.InsertBefore(targets[i], nop);
+							InsertBefore(targets[i], nop);
 							targets[i] = nop;
 						}
-					}
+						break;
 				}
 			}
 		}
@@ -191,6 +184,8 @@ namespace Enyim.Build
 				h.TryEnd = GetNextNonLabel(h.TryEnd);
 			}
 		}
+
+		#endregion
 	}
 }
 

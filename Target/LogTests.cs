@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +24,7 @@ namespace Target
 		public static void Debug(string a) { }
 		public static void Info(string a, int b) { }
 		public static void Error(Exception e) { }
+		public static void Warn(Exception e) { }
 	}
 
 	interface ILog
@@ -31,10 +32,12 @@ namespace Target
 		void Debug(string a);
 		void Info(string a, int b);
 		void Error(Exception e);
+		void Warn(Exception e);
 
 		bool IsDebugEnabled { get; }
 		bool IsInfoEnabled { get; }
 		bool IsErrorEnabled { get; }
+		bool IsWarnEnabled { get; }
 	}
 
 	static class LogManager

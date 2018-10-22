@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.EventSource
 {
-	[Order(Int32.MinValue)]
+	[Order(int.MinValue)]
 	internal class AddImplementedTypes : IProcessEventSources
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)

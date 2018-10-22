@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.EventSource
 {
-	[Order(Int32.MaxValue)]
+	[Order(int.MaxValue)]
 	internal class RemoveWeaverReferences : IProcessEventSources
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)

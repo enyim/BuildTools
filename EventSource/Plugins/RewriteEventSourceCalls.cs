@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -20,16 +20,11 @@ namespace Enyim.Build.Weavers.EventSource
 			{
 				foreach (var op in method.GetOpsOf(OpCodes.Callvirt, OpCodes.Call))
 				{
-					var target = op.Operand as MethodReference;
-
-					if (target != null)
+					if (op.Operand is MethodReference target
+						&& implMap.TryGetValue(target.FullName, out var methodDefinition))
 					{
-						MethodDefinition methodDefinition;
-						if (implMap.TryGetValue(target.FullName, out methodDefinition))
-						{
-							op.OpCode = OpCodes.Callvirt;
-							op.Operand = methodDefinition;
-						}
+						op.OpCode = OpCodes.Callvirt;
+						op.Operand = methodDefinition;
 					}
 				}
 			}

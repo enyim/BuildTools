@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.EventSource
@@ -23,21 +23,15 @@ namespace Enyim.Build.Weavers.EventSource
 			return retval;
 		}
 
-		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName)
-		{
-			return template.Module.FindType(template.Namespace + "." + GetTargetTypeName(template) + nestedName);
-		}
+		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName) => template.Module.FindType(template.Namespace + "." + GetTargetTypeName(template) + nestedName);
 
-		protected override string GetTargetTypeName(TypeDefinition template)
-		{
-			return template.Name.Substring(1);
-		}
+		protected override string GetTargetTypeName(TypeDefinition template) => template.Name.Substring(1);
 
 		private CustomAttribute CreateEventSourceAttribute(IEventSourceTypeDefs typeDefs, string name, string guid)
 		{
 			var source = Module.NewAttr(typeDefs.EventSourceAttribute);
-			if (!String.IsNullOrEmpty(name)) source.SetPropertyValue("Name", Module.TypeSystem.String, name);
-			if (!String.IsNullOrEmpty(guid)) source.SetPropertyValue("Guid", Module.TypeSystem.String, guid);
+			if (!string.IsNullOrEmpty(name)) source.SetPropertyValue("Name", Module.TypeSystem.String, name);
+			if (!string.IsNullOrEmpty(guid)) source.SetPropertyValue("Guid", Module.TypeSystem.String, guid);
 
 			return source;
 		}

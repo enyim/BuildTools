@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -6,7 +6,7 @@ using Mono.Cecil.Cil;
 
 namespace Enyim.Build.Weavers.EventSource
 {
-	[Order(Int32.MinValue)]
+	[Order(int.MinValue)]
 	internal class FactoryImplementer : IProcessEventSources
 	{
 		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
@@ -30,7 +30,7 @@ namespace Enyim.Build.Weavers.EventSource
 							 select new
 							 {
 								 Instruction = i,
-								 Wanted = ((GenericInstanceMethod)mr).GenericArguments.First().Resolve()
+								 Wanted = ((GenericInstanceMethod)mr).GenericArguments[0].Resolve()
 							 }).ToArray();
 
 				if (calls.Length != 0)
@@ -38,13 +38,11 @@ namespace Enyim.Build.Weavers.EventSource
 					var ilp = method.Body.GetILProcessor();
 					foreach (var call in calls)
 					{
-						ImplementedEventSource ie;
-
 						// if the factory creates an interface, resolve it to the implemenetd type
 						// otherwise use the type argument from the generic method
 						var target = call.Wanted.IsClass
 										? call.Wanted.Resolve()
-										: implMap.TryGetValue(call.Wanted.FullName, out ie)
+										: implMap.TryGetValue(call.Wanted.FullName, out var ie)
 											? ie.New
 											: null;
 						if (target == null)
@@ -74,9 +72,7 @@ namespace Enyim.Build.Weavers.EventSource
 		{
 			foreach (var v in method.Body.Variables)
 			{
-				TypeDefinition target;
-
-				if (mapped.TryGetValue(v.VariableType.FullName, out target))
+				if (mapped.TryGetValue(v.VariableType.FullName, out var target))
 				{
 					v.VariableType = target;
 				}

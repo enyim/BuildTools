@@ -42,11 +42,9 @@ namespace Enyim.Build
 
 			foreach (var attribute in Config.Attributes())
 			{
-				PropertyInfo p;
-
 				LogInfo($"Checking {attribute} - {attribute.Name.LocalName}");
 
-				if (props.TryGetValue(attribute.Name.LocalName, out p))
+				if (props.TryGetValue(attribute.Name.LocalName, out var p))
 				{
 					p.GetSetMethod().Invoke(this, new object[] { Convert.ChangeType(attribute.Value, p.PropertyType) });
 					LogInfo($"Set property {attribute.Name.LocalName} to {attribute.Value}");

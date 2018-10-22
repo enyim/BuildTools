@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -14,9 +14,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 			foreach (var p in module.Types.IncludeNestedTypes().SelectMany(t => t.Properties))
 			{
-				InterfaceBasedEventSource target;
-
-				if (implMap.TryGetValue(p.PropertyType.FullName, out target))
+				if (implMap.TryGetValue(p.PropertyType.FullName, out var target))
 					p.PropertyType = target.New;
 			}
 		}

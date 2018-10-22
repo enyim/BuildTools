@@ -1,4 +1,4 @@
-﻿#define ENABLE_UNSAFE
+#define ENABLE_UNSAFE
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
@@ -28,11 +28,11 @@ namespace Enyim.Build.Weavers.EventSource
 		{
 			this.module = module;
 			this.template = template;
-			this.typeDefs = template.TypeDefs;
-			this.ensureOpcodes = EnsureNestedBuilder("Opcodes");
-			this.ensureTasks = EnsureNestedBuilder("Tasks");
+			typeDefs = template.TypeDefs;
+			ensureOpcodes = EnsureNestedBuilder("Opcodes");
+			ensureTasks = EnsureNestedBuilder("Tasks");
 #if ENABLE_UNSAFE
-			this.unsafeWriteEventBuilder = new UnsafeWriteEventBuilder(module, typeDefs);
+			unsafeWriteEventBuilder = new UnsafeWriteEventBuilder(module, typeDefs);
 #endif
 		}
 
@@ -45,7 +45,7 @@ namespace Enyim.Build.Weavers.EventSource
 		public virtual Implemented<MethodDefinition>[] Implement()
 		{
 			var retval = template
-							.Loggers.Select(meta => Implemented.Create(meta.Method, this.ImplementLogMethod(meta)))
+							.Loggers.Select(meta => Implemented.Create(meta.Method, ImplementLogMethod(meta)))
 							.Concat(template.Guards.Select(meta => Implemented.Create(meta.Template, ImplementGuardMethod(meta))))
 							.ToArray();
 
@@ -124,12 +124,9 @@ namespace Enyim.Build.Weavers.EventSource
 			body.Add(Instruction.Create(OpCodes.Ret));
 		}
 
-		protected IEnumerable<Instruction> EmitIsEnabled(EventLevel? level, EventKeywords? keywords)
-		{
-			return !level.HasValue || !keywords.HasValue
+		protected IEnumerable<Instruction> EmitIsEnabled(EventLevel? level, EventKeywords? keywords) => !level.HasValue || !keywords.HasValue
 					? EmitIsEnabledFallback()
 					: EmitSpecificIsEnabled(level.Value, keywords.Value);
-		}
 
 		private IEnumerable<Instruction> EmitIsEnabledFallback()
 		{
@@ -143,7 +140,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Ldc_I4, (int)level);
 
 			var kw = (long)keywords;
-			if (kw >= Int32.MinValue && kw <= Int32.MaxValue)
+			if (kw >= int.MinValue && kw <= int.MaxValue)
 			{
 				yield return Instruction.Create(OpCodes.Ldc_I4, (int)kw);
 				yield return Instruction.Create(OpCodes.Conv_I8);
@@ -170,7 +167,7 @@ namespace Enyim.Build.Weavers.EventSource
 					: unsafeWriteEventBuilder.CanDo(method)
 						? unsafeWriteEventBuilder.Emit(builder, method, metadata)
 #endif
-					: EmitWriteEventFallback(builder, method, metadata);
+					: EmitWriteEventFallback(method, metadata);
 		}
 
 		private IEnumerable<Instruction> EmitSpecificWriteEvent(BodyBuilder builder, MethodDefinition method, MethodReference writeEvent, LogMethod metadata)
@@ -188,7 +185,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Call, module.ImportReference(writeEvent));
 		}
 
-		private IEnumerable<Instruction> EmitWriteEventFallback(BodyBuilder builder, MethodDefinition method, LogMethod metadata)
+		private IEnumerable<Instruction> EmitWriteEventFallback(MethodDefinition method, LogMethod metadata)
 		{
 			Log.Warn(string.Format("Using WriteEvent fallback for {0}", method.FullName));
 
@@ -251,10 +248,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return endOfBlock;
 		}
 
-		private Lazy<TypeDefinition> EnsureNestedBuilder(string name)
-		{
-			return new Lazy<TypeDefinition>(() => GetNested(name) ?? this.MkNested(name));
-		}
+		private Lazy<TypeDefinition> EnsureNestedBuilder(string name) => new Lazy<TypeDefinition>(() => GetNested(name) ?? MkNested(name));
 	}
 }
 

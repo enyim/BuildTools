@@ -1,7 +1,7 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Enyim.Build;
 using NDesk.Options;
 
@@ -11,10 +11,7 @@ namespace Runner
 	{
 		private bool help;
 
-		public Options()
-		{
-			Properties = new List<KeyValuePair<string, string>>();
-		}
+		public Options() => Properties = new List<KeyValuePair<string, string>>();
 
 		public FileInfo Weaver { get; private set; }
 		public FileInfo Source { get; private set; }
@@ -37,7 +34,7 @@ namespace Runner
 				}
 				else if (extra.Count > 0)
 				{
-					throw new InvalidOperationException("Unknown argument: " + extra.First());
+					throw new InvalidOperationException("Unknown argument: " + extra[0]);
 				}
 
 				Validate();
@@ -55,8 +52,7 @@ namespace Runner
 		}
 
 		private OptionSet CreateOptionSet()
-		{
-			return new OptionSet
+			=> new OptionSet
 			{
 				{ "w|weaver=", "The path to the weaver assembly.", s => Weaver = new FileInfo(s) },
 				{ "p=", "A configuration property in the form of 'name=value'.", s =>
@@ -75,7 +71,6 @@ namespace Runner
 				{ "key=", "The path of signining key to be used", s => KeyFile = new FileInfo(s) },
 				{ "h|help", "Shows the help.", s => help = s != null },
 			};
-		}
 
 		private void Validate()
 		{
@@ -96,7 +91,7 @@ namespace Runner
 
 		private void MustExist(string arg, FileInfo file)
 		{
-			if (file != null && !file.Exists)
+			if (file?.Exists == false)
 				throw new InvalidOperationException($"Invalid argument {arg}: File not found.");
 		}
 	}
@@ -106,7 +101,7 @@ namespace Runner
 
 /* ************************************************************
  *
- *    Copyright (c) Attila Kiskó, enyim.com
+ *    Copyright (c) Attila KiskÃ³, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

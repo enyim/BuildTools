@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Mono.Cecil;
 
@@ -8,10 +8,7 @@ namespace Enyim.Build.Weavers.EventSource
 	{
 		private readonly ModuleDefinition module;
 
-		public AbstractEventSourceBuilder(ModuleDefinition module)
-		{
-			this.module = module;
-		}
+		public AbstractEventSourceBuilder(ModuleDefinition module) => this.module = module;
 
 		internal ImplementedEventSource Implement(TypeDefinition type)
 		{
@@ -32,15 +29,8 @@ namespace Enyim.Build.Weavers.EventSource
 		{
 			public Implementer(ModuleDefinition module, EventSourceTemplate template) : base(module, template) { }
 
-			protected override TypeDefinition MkNested(string name)
-			{
-				return module.NewType(template.Type, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-			}
-
-			protected override TypeDefinition GetNested(string name)
-			{
-				return template.Type.NestedTypes.FirstOrDefault(t => t.Name == name);
-			}
+			protected override TypeDefinition MkNested(string name) => module.NewType(template.Type, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
+			protected override TypeDefinition GetNested(string name) => template.Type.NestedTypes.FirstOrDefault(t => t.Name == name);
 
 			protected override MethodDefinition ImplementGuardMethod(GuardMethod metadata)
 			{

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +10,7 @@ using Mono.Cecil;
 
 namespace Runner
 {
-	class Weaver
+	internal class Weaver
 	{
 		private readonly Assembly assembly;
 		private readonly ILogger logger;
@@ -22,7 +22,7 @@ namespace Runner
 
 			this.assembly = assembly;
 			this.logger = logger;
-			this.config = new XElement(Name);
+			config = new XElement(Name);
 		}
 
 		public string Name { get; }
@@ -52,14 +52,13 @@ namespace Runner
 			var module = ModuleDefinition.ReadModule(source, new ReaderParameters
 			{
 				AssemblyResolver = new WeaverAssembyResolver(Path.GetDirectoryName(source)),
-				ReadSymbols = true,
-				ReadingMode = ReadingMode.Immediate
+				ReadSymbols = false,//true,
+				ReadingMode = ReadingMode.Deferred
 			});
 
 			RunWeaver(module);
 
 			return module;
-
 		}
 
 		private void RunWeaver(ModuleDefinition module)

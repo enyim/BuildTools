@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Mono.Cecil;
 
@@ -6,10 +6,10 @@ namespace Enyim.Build.Weavers.EventSource
 {
 	internal abstract class TemplateBasedEventSourceBuilder
 	{
-		public TemplateBasedEventSourceBuilder(ModuleDefinition module)
+		protected TemplateBasedEventSourceBuilder(ModuleDefinition module)
 		{
-			this.Module = module;
-			this.TypeDefs = new GuessingTypeDefs(module);
+			Module = module;
+			TypeDefs = new GuessingTypeDefs(module);
 		}
 
 		protected abstract string GetTargetTypeName(TypeDefinition template);
@@ -17,14 +17,14 @@ namespace Enyim.Build.Weavers.EventSource
 
 		protected readonly ModuleDefinition Module;
 		protected readonly GuessingTypeDefs TypeDefs;
-		protected virtual bool EmitGuardedLoggers { get { return true; } }
+		protected virtual bool EmitGuardedLoggers => false;
 
 		protected virtual TypeDefinition CreateTargetType(TypeDefinition template)
 		{
-			var retval = CecilExtensions.NewType(Module, template.Namespace,
-													GetTargetTypeName(template),
-													TypeDefs.BaseTypeRef,
-													TypeAttributes.Public | TypeAttributes.Sealed);
+			var retval = Module.NewType(template.Namespace,
+											GetTargetTypeName(template),
+											TypeDefs.BaseTypeRef,
+											TypeAttributes.Public | TypeAttributes.Sealed);
 
 			TryNestClass(template, retval, "Keywords");
 			TryNestClass(template, retval, "Tasks");
@@ -67,10 +67,7 @@ namespace Enyim.Build.Weavers.EventSource
 			return retval;
 		}
 
-		protected virtual EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template)
-		{
-			return new EventSourceTemplate(template, TypeDefs);
-		}
+		protected virtual EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new EventSourceTemplate(template, TypeDefs);
 
 		#region [ Implementer                  ]
 
@@ -79,27 +76,18 @@ namespace Enyim.Build.Weavers.EventSource
 			private readonly TypeDefinition target;
 
 			public Implementer(ModuleDefinition module, EventSourceTemplate template, TypeDefinition target)
-			  : base(module, template)
-			{
-				this.target = target;
-			}
+			  : base(module, template) => this.target = target;
 
 			public bool EmitGuardedLoggers { get; set; }
 
-			protected override TypeDefinition MkNested(string name)
-			{
-				return module.NewType(target, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-			}
+			protected override TypeDefinition MkNested(string name) => module.NewType(target, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
 
-			protected override TypeDefinition GetNested(string name)
-			{
-				return target.NestedTypes.FirstOrDefault(t => t.Name == name);
-			}
+			protected override TypeDefinition GetNested(string name) => target.NestedTypes.FirstOrDefault(t => t.Name == name);
 
 			protected override MethodDefinition ImplementGuardMethod(GuardMethod metadata)
 			{
 				var source = metadata.Template;
-				var newMethod = new MethodDefinition(source.Name, MethodAttributes.Public, this.module.TypeSystem.Boolean);
+				var newMethod = new MethodDefinition(source.Name, MethodAttributes.Public, module.TypeSystem.Boolean);
 
 				source.CopyAttrsTo(newMethod);
 				target.Methods.Add(newMethod);

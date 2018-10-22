@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -15,8 +16,8 @@ namespace Enyim.Build.Weavers.EventSource
 			if (staticLoggers.Length == 0) return;
 
 			var logMap = staticLoggers.SelectMany(l => l.Methods).ToDictionary(m => m.Old.FullName, m => m.New);
-			var instanceMap = staticLoggers.ToDictionary(s => s.Old.FullName, s => (FieldDefinition)s.Meta["Instance"]);
-			var isEnabled = staticLoggers.ToDictionary(s => s.Old.FullName, s => module.ImportReference(CecilExtensions.FindMethod(s.New, "IsEnabled")));
+			var instanceMap = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => (FieldDefinition)eventSource.Meta["Instance"]);
+			var isEnabled = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => module.ImportReference(eventSource.New.FindMethod("IsEnabled")));
 			var comparer = new DeclaringTypeComparer();
 
 			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))
@@ -31,30 +32,33 @@ namespace Enyim.Build.Weavers.EventSource
 				if (instanceFields.Count > 0)
 				{
 					var cc = new CallCollector(module);
-					var calls = cc.FindCalls(method, r => instanceMap.ContainsKey(r.DeclaringType.FullName));
-					var groups = cc.CollapseBlocks(calls, comparer);
+					var calls = cc.Collect(method, r => instanceMap.ContainsKey(r.Method.DeclaringType.FullName));
+					var groups = calls.SplitToSequences(comparer);
 
 					using (var builder = new BodyBuilder(method.Body))
 					{
 						foreach (var group in groups)
 						{
-							var declaringTypeName = group.Calls.First().Method.DeclaringType.FullName;
+							var firstCall = group.First();
+
+							var declaringTypeName = firstCall.Call.OperandAsMethod().DeclaringType.FullName;
 							var instance = instanceFields[declaringTypeName];
 
 							var label = builder.DefineLabel();
 
-							builder.InsertBefore(group.Start, Instruction.Create(OpCodes.Ldsfld, instance));
-							builder.InsertBefore(group.Start, Instruction.Create(OpCodes.Callvirt, isEnabled[declaringTypeName]));
-							builder.InsertBefore(group.Start, Instruction.Create(OpCodes.Brfalse, label));
+							var start = firstCall.StartsAt;
+							builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, instance));
+							builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, isEnabled[declaringTypeName]));
+							builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
 
-							builder.InsertAfter(group.End, label);
+							builder.InsertAfter(group.Last().Call, label);
 
-							foreach (var call in group.Calls)
+							foreach (var call in group)
 							{
-								builder.InsertBefore(call.Start, Instruction.Create(OpCodes.Ldsfld, instance));
+								builder.InsertBefore(call.StartsAt, Instruction.Create(OpCodes.Ldsfld, instance));
 
-								call.End.OpCode = OpCodes.Callvirt;
-								call.End.Operand = logMap[call.Method.FullName];
+								call.Call.OpCode = OpCodes.Callvirt;
+								call.Call.Operand = logMap[call.Call.OperandAsMethod().FullName];
 							}
 						}
 					}
@@ -62,18 +66,15 @@ namespace Enyim.Build.Weavers.EventSource
 			}
 		}
 
-		private class DeclaringTypeComparer : IEqualityComparer<Instruction>
+		private class DeclaringTypeComparer : CallSequenceComparer
 		{
-			public bool Equals(Instruction x, Instruction y)
+			protected override bool IsConsecutive(Instruction left, Instruction right)
 			{
-				return x.OpCode == y.OpCode
-						&& (x.OpCode == OpCodes.Call || x.OpCode == OpCodes.Callvirt)
-						&& ((MemberReference)x.Operand).DeclaringType.FullName == ((MemberReference)y.Operand).DeclaringType.FullName;
-			}
+				Debug.Assert(left.OpCode == OpCodes.Call || left.OpCode == OpCodes.Callvirt);
+				Debug.Assert(right.OpCode == OpCodes.Call || right.OpCode == OpCodes.Callvirt);
 
-			public int GetHashCode(Instruction obj)
-			{
-				return obj.ToString().GetHashCode();
+				return left.OpCode == right.OpCode
+						&& ((MemberReference)left.Operand).DeclaringType.FullName == ((MemberReference)right.Operand).DeclaringType.FullName;
 			}
 		}
 	}
