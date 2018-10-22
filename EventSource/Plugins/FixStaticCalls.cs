@@ -19,6 +19,7 @@ namespace Enyim.Build.Weavers.EventSource
 			var instanceMap = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => (FieldDefinition)eventSource.Meta["Instance"]);
 			var isEnabled = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => module.ImportReference(eventSource.New.FindMethod("IsEnabled")));
 			var comparer = new DeclaringTypeComparer();
+			var callCollector = new Lazy<CallCollector>(() => new CallCollector(module));
 
 			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))
 			{
@@ -31,8 +32,7 @@ namespace Enyim.Build.Weavers.EventSource
 				var instanceFields = tmp.Distinct().ToDictionary(o => o.cls, o => o.instanceField);
 				if (instanceFields.Count > 0)
 				{
-					var cc = new CallCollector(module);
-					var calls = cc.Collect(method, r => instanceMap.ContainsKey(r.Method.DeclaringType.FullName));
+					var calls = callCollector.Value.Collect(method, r => instanceMap.ContainsKey(r.Method.DeclaringType.FullName));
 					var groups = calls.SplitToSequences(comparer);
 
 					using (var builder = new BodyBuilder(method.Body))

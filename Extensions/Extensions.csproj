@@ -16,7 +16,7 @@
         </Compile>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="ICSharpCode.Decompiler" Version="4.0.0.4319-beta2" />
+        <PackageReference Include="ICSharpCode.Decompiler" Version="3.2.0.3856" />
         <PackageReference Include="Mono.Cecil" Version="0.10.1" />
     </ItemGroup>
 </Project>

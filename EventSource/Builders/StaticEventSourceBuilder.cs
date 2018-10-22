@@ -11,6 +11,7 @@ namespace Enyim.Build.Weavers.EventSource
 		public StaticBasedEventSource Implement(TypeDefinition template)
 		{
 			var previous = DoImplement(template);
+			previous.Old.Name += "_" + Guid.NewGuid().ToString("N");
 			previous.Old.CopyAttrsTo(previous.New);
 
 			var retval = new StaticBasedEventSource
