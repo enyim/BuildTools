@@ -3,20 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	internal class RewriteProps : IProcessEventSources
+	internal class RewriteProps : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
-		{
-			var implMap = loggers.OfType<InterfaceBasedEventSource>().ToDictionary(l => l.Old.FullName);
-			if (implMap.Count == 0) return;
+		private readonly Dictionary<string, InterfaceBasedEventSource> implMap;
 
-			foreach (var p in module.Types.IncludeNestedTypes().SelectMany(t => t.Properties))
-			{
-				if (implMap.TryGetValue(p.PropertyType.FullName, out var target))
-					p.PropertyType = target.New;
-			}
+		public RewriteProps(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		{
+			implMap = implementations.OfType<InterfaceBasedEventSource>().ToDictionary(l => l.Old.FullName);
+		}
+
+		public override PropertyDefinition BeforeProperty(PropertyDefinition property)
+		{
+			if (implMap.TryGetValue(property.PropertyType.FullName, out var target))
+				property.PropertyType = target.New;
+
+			return property;
 		}
 	}
 }

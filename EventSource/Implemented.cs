@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class Implemented<T>
 	{

@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class AbstractEventSourceBuilder
 	{
@@ -30,7 +30,7 @@ namespace Enyim.Build.Weavers.EventSource
 			public Implementer(ModuleDefinition module, EventSourceTemplate template) : base(module, template) { }
 
 			protected override TypeDefinition MkNested(string name) => module.NewType(template.Type, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-			protected override TypeDefinition GetNested(string name) => template.Type.NestedTypes.FirstOrDefault(t => t.Name == name);
+			protected override TypeDefinition GetNested(string name) => template.Type.NestedTypes.Named(name);
 
 			protected override MethodDefinition ImplementGuardMethod(GuardMethod metadata)
 			{
@@ -39,20 +39,20 @@ namespace Enyim.Build.Weavers.EventSource
 				if (metadata.IsTemplate)
 				{
 					retval.Attributes = (MethodAttributes.FamANDAssem | MethodAttributes.Family | MethodAttributes.HideBySig);
-					SetGuardMethodBody(retval, metadata.LoggerTemplate.Level, metadata.LoggerTemplate.Keywords);
+					SetGuardMethodBody(retval, metadata.TraceTemplate.Level, metadata.TraceTemplate.Keywords);
 				}
 
 				return retval;
 			}
 
-			protected override MethodDefinition ImplementLogMethod(LogMethod metadata)
+			protected override MethodDefinition ImplementTraceMethod(TraceMethod metadata)
 			{
 				var retval = metadata.Method;
 
 				if (metadata.IsEmpty)
 				{
 					retval.Attributes = (MethodAttributes.FamANDAssem | MethodAttributes.Family | MethodAttributes.HideBySig);
-					SetLogMethodBody(retval, metadata, true);
+					SetTraceMethodBody(retval, metadata, true);
 				}
 
 				UpdateEventAttribute(retval, metadata);

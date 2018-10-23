@@ -1,13 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.LogTo
 {
-	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-	internal sealed class OrderAttribute : Attribute
+	public class ModuleRewriter : ModuleRewriterBase
 	{
-		public OrderAttribute(int order) => Order = order;
-
-		public int Order { get; }
+		protected override IModuleVisitor[] GetVisitors() => new[] { new LoggerImplementer() };
 	}
 }
 

@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	[DebuggerDisplay("{Name} = {Value}")]
 	internal class NamedConst<T>

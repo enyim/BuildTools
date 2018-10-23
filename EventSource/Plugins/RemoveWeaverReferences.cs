@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(int.MaxValue)]
-	internal class RemoveWeaverReferences : IProcessEventSources
+	internal class RemoveBuildAssemblyReferences : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		public RemoveBuildAssemblyReferences(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void AfterModule(ModuleDefinition module)
 		{
-			var fullName = typeof(RemoveWeaverReferences).Assembly.FullName;
+			var fullName = typeof(RemoveBuildAssemblyReferences).Assembly.FullName;
 
 			foreach (var ar in module.AssemblyReferences.ToArray())
 			{

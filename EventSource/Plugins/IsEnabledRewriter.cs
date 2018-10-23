@@ -4,38 +4,39 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	internal class IsEnabledRewriter : IProcessEventSources
+	// if the interface template has IsEnabled() declared rewrite the call to EventSource.IsEnabled()
+	internal class IsEnabledRewriter : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		private Dictionary<string, MethodReference> fixMap;
+
+		public IsEnabledRewriter(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void BeforeModule(ModuleDefinition module)
 		{
-			var source = from l in loggers.OfType<InterfaceBasedEventSource>()
-						 let old = l.Old.FindMethod("IsEnabled")
+			var source = from impl in Implementations.OfType<InterfaceBasedEventSource>()
+						 let old = impl.Old.FindMethod("IsEnabled")
 						 where old != null
 						 select new
 						 {
 							 Old = old,
-							 New = l.New.BaseType.Resolve().FindMethod("IsEnabled").ImportInto(module)
+							 New = impl.New.BaseType.Resolve().FindMethod("IsEnabled").ImportInto(module)
 						 };
 
-			var fixMap = source.ToDictionary(a => a.Old.FullName, a => a.New);
-			if (fixMap.Count == 0) return;
+			fixMap = source.ToDictionary(a => a.Old.ToString(), a => a.New);
+		}
 
-			var allMethods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
-
-			foreach (var method in allMethods)
+		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
+		{
+			if (instruction.OpCode == OpCodes.Callvirt
+				&& fixMap.TryGetValue(instruction.TargetMethod().ToString(), out var impl))
 			{
-				foreach (var instruction in method.GetOpsOf(OpCodes.Callvirt).ToArray())
-				{
-					if (instruction.Operand is MethodReference target
-						&& fixMap.TryGetValue(target.FullName, out var impl))
-					{
-						instruction.OpCode = OpCodes.Call;
-						instruction.Operand = impl;
-					}
-				}
+				instruction.OpCode = OpCodes.Call;
+				instruction.Operand = impl;
 			}
+
+			return instruction;
 		}
 	}
 }

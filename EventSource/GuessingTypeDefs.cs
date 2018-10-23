@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class GuessingTypeDefs : IEventSourceTypeDefs
 	{
@@ -64,7 +64,7 @@ namespace Enyim.Build.Weavers.EventSource
 											.Resolve(name)
 											.Modules
 											.SelectMany(m => m.Types)
-											.FirstOrDefault(t => t.FullName == "Microsoft.Diagnostics.Tracing.EventSource");
+											.Named("Microsoft.Diagnostics.Tracing.EventSource");
 
 				if (def != null)
 					return module.ImportReference(def);

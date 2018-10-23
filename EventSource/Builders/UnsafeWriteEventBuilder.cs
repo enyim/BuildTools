@@ -5,12 +5,14 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	using MethodInfo = System.Reflection.MethodInfo;
 
 	internal class UnsafeWriteEventBuilder
 	{
+		private static readonly ILog log = LogManager.GetLogger<UnsafeWriteEventBuilder>();
+
 		private static readonly MethodInfo RuntimeHelpers_OffsetToStringData_Get = typeof(System.Runtime.CompilerServices.RuntimeHelpers).GetProperty("OffsetToStringData").GetGetMethod();
 		private static readonly MethodInfo IntPtr_Op_Explicit = typeof(System.IntPtr).GetMethod("op_Explicit", new[] { typeof(void*) });
 		private static readonly MethodInfo String_Length_Get = typeof(string).GetProperty("Length").GetGetMethod();
@@ -49,9 +51,9 @@ namespace Enyim.Build.Weavers.EventSource
 			return pt.FullName;
 		}
 
-		public IEnumerable<Instruction> Emit(BodyBuilder builder, MethodDefinition method, LogMethod metadata)
+		public IEnumerable<Instruction> Emit(BodyBuilder builder, MethodDefinition method, TraceMethod metadata)
 		{
-			Log.Warn(string.Format("Using WriteEventCore fallback for {0}", method.FullName));
+			log.Warn($"Using WriteEventCore fallback for {method}");
 
 			var parameters = method.Parameters;
 			var count = parameters.Count;

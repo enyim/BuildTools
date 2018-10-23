@@ -1,19 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Rocks;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(-10000)]
-	internal class OptimizeImplementedMethods : IProcessEventSources
+	internal class OptimizeImplementedMethods : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		public OptimizeImplementedMethods(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void AfterModule(ModuleDefinition module)
 		{
-			foreach (var m in loggers.SelectMany(l => l.New.Methods))
+			foreach (var method in Implementations.SelectMany(ies => ies.New.Methods))
 			{
-				m.Body.OptimizeMacros();
+				method.Body.OptimizeMacros();
 			}
 		}
 	}

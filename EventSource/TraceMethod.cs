@@ -3,11 +3,13 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	internal class LogMethod
+	internal class TraceMethod
 	{
-		public LogMethod(MethodDefinition method, CustomAttribute a, bool isEmpty = true)
+		private static readonly ILog log = LogManager.GetLogger<TraceMethod>();
+
+		public TraceMethod(MethodDefinition method, CustomAttribute a, bool isEmpty = true)
 		{
 			Method = method;
 			IsEmpty = isEmpty;
@@ -15,13 +17,13 @@ namespace Enyim.Build.Weavers.EventSource
 			if (a == null) return;
 
 			Id = (int)a.ConstructorArguments[0].Value;
-			Level = LogMethod.GetProp<EventLevel, EventLevel?>(a, "Level", v => v);
-			Keywords = LogMethod.GetProp<EventKeywords, EventKeywords?>(a, "Keywords", v => v);
-			Task = LogMethod.GetProp<EventTask, NamedConst<int>>(a, "Task", v => NamedConst.Existing(v.ToString(), (int)v));
-			Opcode = LogMethod.GetProp<EventOpcode, NamedConst<int>>(a, "Opcode", v => NamedConst.Existing(v.ToString(), (int)v));
+			Level = TraceMethod.GetProp<EventLevel, EventLevel?>(a, "Level", v => v);
+			Keywords = TraceMethod.GetProp<EventKeywords, EventKeywords?>(a, "Keywords", v => v);
+			Task = TraceMethod.GetProp<EventTask, NamedConst<int>>(a, "Task", v => NamedConst.Existing(v.ToString(), (int)v));
+			Opcode = TraceMethod.GetProp<EventOpcode, NamedConst<int>>(a, "Opcode", v => NamedConst.Existing(v.ToString(), (int)v));
 
-			if (Task != null) Log.Info($"LM: {method} {Task.Name}={Task.Value} - exists: {Task.Exists}");
-			if (Opcode != null) Log.Info($"LM: {method} {Opcode.Name}={Opcode.Value} - exists: {Opcode.Exists}");
+			if (Task != null) log.Trace($"{method} {Task.Name}={Task.Value} - exists: {Task.Exists}");
+			if (Opcode != null) log.Trace($"{method} {Opcode.Name}={Opcode.Value} - exists: {Opcode.Exists}");
 		}
 
 		public int Id { get; set; }

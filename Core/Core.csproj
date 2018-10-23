@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
     <OutputType>Library</OutputType>
-    <RootNamespace>Enyim.Build.Rewriters.LogTo</RootNamespace>
-    <AssemblyName>Enyim.Build.Rewriters.LogTo</AssemblyName>
+    <RootNamespace>Enyim.Build.Rewriters.Core</RootNamespace>
+    <AssemblyName>Enyim.Build.Rewriters.Core</AssemblyName>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\enyim.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -17,9 +17,5 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.10.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
 </Project>

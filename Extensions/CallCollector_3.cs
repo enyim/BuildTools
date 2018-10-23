@@ -22,30 +22,35 @@ namespace Enyim.Build
 			ilReader = new ILReader(typeSystem);
 		}
 
-		public CallInfo[] Collect(Mono.Cecil.MethodDefinition method, Func<CallInstruction, bool> filter = null)
+		public CallInfo[] Collect(Mono.Cecil.MethodDefinition method, Func<Instruction, bool> filter = null)
 		{
+			if (!method.HasBody) return new CallInfo[0];
+
 			var body = method.Body;
-			var function = ilReader.ReadIL(body);
-			var transformContext = new ILTransformContext(function, typeSystem);
-
-			foreach (var t in ILTransforms)
-				t.Run(function, transformContext);
-
-			var collector = new BlockVisitor(filter);
-			function.AcceptVisitor(collector);
-
-			if (collector.CallStarts.Count > 0)
+			if (method.Body.Instructions.Any(i => (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt) && filter(i)))
 			{
+				var function = ilReader.ReadIL(body);
+				var transformContext = new ILTransformContext(function, typeSystem);
 				var opsByOffset = body.Instructions.ToDictionary(instr => instr.Offset);
-				var retval = new CallInfo[collector.CallStarts.Count];
 
-				var i = 0;
-				foreach (var (blockStart, callOffset) in collector.CallStarts)
+				foreach (var t in ILTransforms)
+					t.Run(function, transformContext);
+
+				var collector = new BlockVisitor(i => filter(opsByOffset[i.ILRange.Start]));
+				function.AcceptVisitor(collector);
+
+				if (collector.CallStarts.Count > 0)
 				{
-					retval[i++] = new CallInfo(opsByOffset[blockStart], opsByOffset[callOffset]);
-				}
+					var retval = new CallInfo[collector.CallStarts.Count];
 
-				return retval;
+					var i = 0;
+					foreach (var (blockStart, callOffset) in collector.CallStarts)
+					{
+						retval[i++] = new CallInfo(opsByOffset[blockStart], opsByOffset[callOffset]);
+					}
+
+					return retval;
+				}
 			}
 
 			return new CallInfo[0];

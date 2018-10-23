@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(int.MinValue)]
-	internal class AddImplementedTypes : IProcessEventSources
+	internal class AddImplementedTypes : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		public AddImplementedTypes(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void BeforeModule(ModuleDefinition module)
 		{
-			foreach (var ie in loggers.OfType<TemplateBasedEventSource>())
+			foreach (var ie in Implementations.OfType<TemplateBasedEventSource>())
 			{
 				module.Types.Add(ie.New);
 			}

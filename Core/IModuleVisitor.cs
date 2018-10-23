@@ -1,26 +1,28 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build
 {
-	internal class InternalizeTemplateInterfaces : IProcessEventSources
+	public interface IModuleVisitor
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
-		{
-			var source = loggers
-							.OfType<InterfaceBasedEventSource>()
-							.Where(l => l.Old.IsInterface)
-							.Select(l => l.Old);
+		void BeforeModule(ModuleDefinition module);
+		void AfterModule(ModuleDefinition module);
 
-			foreach (var typeDefinition in source)
-			{
-				typeDefinition.Attributes = typeDefinition.Attributes
-												.Remove(TypeAttributes.Public)
-												.Add(TypeAttributes.NotPublic);
-			}
-		}
+		TypeDefinition BeforeType(TypeDefinition type);
+		void AfterType(TypeDefinition type);
+
+		MethodDefinition BeforeMethod(MethodDefinition method);
+		Instruction MethodInstruction(MethodDefinition owner, Instruction instruction);
+		void AfterMethod(MethodDefinition method);
+
+		PropertyDefinition BeforeProperty(PropertyDefinition property);
+		void AfterProperty(PropertyDefinition property);
+
+		FieldDefinition BeforeField(FieldDefinition field);
+		void AfterField(FieldDefinition field);
 	}
 }
 

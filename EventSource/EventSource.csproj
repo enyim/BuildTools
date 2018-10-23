@@ -9,6 +9,8 @@
         <AssemblyOriginatorKeyFile>..\..\enyim.snk</AssemblyOriginatorKeyFile>
         <DelaySign>false</DelaySign>
         <LangVersion>latest</LangVersion>
+        <ApplicationIcon />
+        <StartupObject />
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="..\GlobalSuppressions.cs">
@@ -19,6 +21,7 @@
         <PackageReference Include="Mono.Cecil" Version="0.10.1" />
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\Core\Core.csproj" />
       <ProjectReference Include="..\Extensions\Extensions.csproj" />
     </ItemGroup>
 </Project>

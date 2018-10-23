@@ -1,25 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(-1)]
-	internal class CreateInstanceFieldsForStaticTemplates : IProcessEventSources
+	internal class CreateInstanceFieldsForStaticTemplates : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		public CreateInstanceFieldsForStaticTemplates(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void BeforeModule(ModuleDefinition module)
 		{
-			foreach (var es in loggers.OfType<StaticBasedEventSource>())
+			foreach (var impl in Implementations.OfType<StaticBasedEventSource>())
 			{
-				var newType = es.New;
-				var ctor = newType.FindConstructor(new TypeReference[0]);
-				var field = newType.DeclareStaticField(module, module.ImportReference(newType), "<>Instance", () => new Instruction[]
+				var newType = impl.New;
+
+				impl.Meta["Instance"] = newType.DeclareStaticField(module, module.ImportReference(newType), "<>Instance", (field) => new[]
 				{
-					Instruction.Create(OpCodes.Newobj, ctor)
+					Instruction.Create(OpCodes.Stsfld, field),
+					Instruction.Create(OpCodes.Newobj, newType.FindConstructor(new TypeReference[0]))
 				}, FieldAttributes.Public);
-				es.Meta["Instance"] = field;
 			}
 		}
 	}

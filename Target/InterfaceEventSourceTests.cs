@@ -8,28 +8,42 @@ using System.Threading.Tasks;
 
 namespace Target
 {
-	class InterfaceEventSourceTests
+	internal class InterfaceEventSourceTests
 	{
-		IInterfaceEventSource trace = EventSourceFactory.Get<IInterfaceEventSource>();
+		private IInterfaceEventSource trace = EventSourceFactory.Get<IInterfaceEventSource>();
 
 		public void Hello()
 		{
 			trace.ConnectStart("aaaa");
 			trace.ConnectStart("aaaa");
-			trace.ReceiveStop("aaaa", false, true);
+
+			if (trace.IsEnabled())
+			{
+				trace.ReceiveStop("aaaa", false, true);
+			}
+		}
+
+		public void LocalHello()
+		{
+			var localTrace = EventSourceFactory.Get<IInterfaceEventSource>();
+
+			localTrace.ConnectStart("aaaa");
+			localTrace.ConnectStart("aaaa");
+
+			if (localTrace.IsEnabled())
+			{
+				localTrace.ReceiveStop("aaaa", false, true);
+			}
 		}
 	}
 
-	static class EventSourceFactory
+	internal static class EventSourceFactory
 	{
-		public static T Get<T>()
-		{
-			throw new NotImplementedException();
-		}
+		public static T Get<T>() => throw new NotImplementedException();
 	}
 
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
-	sealed class AsEventSourceAttribute : Attribute
+	internal sealed class AsEventSourceAttribute : Attribute
 	{
 		public string Name { get; set; }
 		public string Guid { get; set; }
@@ -38,6 +52,8 @@ namespace Target
 	[AsEventSource(Name = "Enyim-Caching-Core")]
 	public interface IInterfaceEventSource
 	{
+		bool IsEnabled();
+
 		[Event(1, Level = EventLevel.Informational, Keywords = InterfaceEventSourceKeywords.Socket)]
 		void ConnectStart(string endpoint);
 		[Event(2, Level = EventLevel.Informational, Keywords = InterfaceEventSourceKeywords.Socket)]
@@ -113,13 +129,13 @@ namespace Target
 		//}
 	}
 
-	class InterfaceEventSourceKeywords
+	internal class InterfaceEventSourceKeywords
 	{
 		public const EventKeywords Socket = (EventKeywords)1;
 		public const EventKeywords Random = (EventKeywords)10;
 	}
 
-	class InterfaceEventSourceOpcodes
+	internal class InterfaceEventSourceOpcodes
 	{
 		public const EventOpcode Lofasz = (EventOpcode)100;
 	}

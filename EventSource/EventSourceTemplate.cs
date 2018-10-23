@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class EventSourceTemplate
 	{
 		protected const string GuardPrefix = "Can";
 		protected static readonly HashSet<string> SpecialMethods = new HashSet<string>(new[] { "IsEnabled" });
 
-		private readonly Lazy<IReadOnlyList<LogMethod>> loggers;
+		private readonly Lazy<IReadOnlyList<TraceMethod>> traces;
 		private readonly Lazy<IReadOnlyList<GuardMethod>> guards;
 		protected readonly IEventSourceTypeDefs typeDefs;
 
@@ -25,7 +25,7 @@ namespace Enyim.Build.Weavers.EventSource
 			Tasks = GetNamedNestedType(template, "Tasks");
 			Opcodes = GetNamedNestedType(template, "Opcodes");
 
-			loggers = new Lazy<IReadOnlyList<LogMethod>>(() => GetLogMethods().ToArray());
+			traces = new Lazy<IReadOnlyList<TraceMethod>>(() => GetTraceMethods().ToArray());
 			guards = new Lazy<IReadOnlyList<GuardMethod>>(() => GetGuardMethods().ToArray());
 		}
 
@@ -35,22 +35,22 @@ namespace Enyim.Build.Weavers.EventSource
 		public TypeDefinition Tasks { get; }
 		public TypeDefinition Opcodes { get; }
 
-		public IReadOnlyList<LogMethod> Loggers => loggers.Value;
+		public IReadOnlyList<TraceMethod> Tracers => traces.Value;
 		public IReadOnlyList<GuardMethod> Guards => guards.Value;
 
 		private static TypeDefinition GetNamedNestedType(TypeDefinition type, string name) => type.NestedTypes.FirstOrDefault(n => n.Name == name);
 
-		protected virtual IEnumerable<LogMethod> GetLogMethods()
+		protected virtual IEnumerable<TraceMethod> GetTraceMethods()
 		{
 			var maxId = 0;
-			var loggers = Type.Methods.Where(IsLogMethod);
-			var needsId = new List<LogMethod>();
-			var all = new List<LogMethod>();
+			var loggers = Type.Methods.Where(IsTraceMethod);
+			var needsId = new List<TraceMethod>();
+			var all = new List<TraceMethod>();
 
 			foreach (var logger in loggers)
 			{
 				var ea = logger.CustomAttributes.Named("EventAttribute");
-				var method = new LogMethod(logger, ea, !logger.HasBody);
+				var method = new TraceMethod(logger, ea, !logger.HasBody);
 
 				if (ea == null)
 					needsId.Add(method);
@@ -68,11 +68,11 @@ namespace Enyim.Build.Weavers.EventSource
 			return all;
 		}
 
-		protected virtual bool IsLogMethod(MethodDefinition m) => !m.IsSpecialName && !IsGuardMethod(m) && !SpecialMethods.Contains(m.Name);
+		protected virtual bool IsTraceMethod(MethodDefinition m) => !m.IsSpecialName && !IsGuardMethod(m) && !SpecialMethods.Contains(m.Name);
 
 		protected virtual IEnumerable<GuardMethod> GetGuardMethods()
 		{
-			var loggersByName = Loggers.ToDictionary(m => m.Method.Name);
+			var loggersByName = Tracers.ToDictionary(m => m.Method.Name);
 
 			foreach (var g in Type.Methods.Where(IsGuardMethod))
 			{
@@ -80,7 +80,7 @@ namespace Enyim.Build.Weavers.EventSource
 				{
 					var guard = new GuardMethod
 					{
-						LoggerTemplate = lm,
+						TraceTemplate = lm,
 						Template = g,
 						IsTemplate = !g.HasBody
 					};
@@ -92,7 +92,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 		protected virtual bool IsGuardMethod(MethodDefinition m) => m.Name.StartsWith("Can", StringComparison.Ordinal);
 
-		private void TryGenerateTasks(IEnumerable<LogMethod> methods)
+		private void TryGenerateTasks(IEnumerable<TraceMethod> methods)
 		{
 			var toFix = (from m in methods
 						 where m.Task == null

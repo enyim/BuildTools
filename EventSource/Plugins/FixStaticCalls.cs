@@ -5,65 +5,89 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(200)]
-	internal class FixStaticCalls : IProcessEventSources
+	internal class FixStaticCalls : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+#if DO_GUARDS
+		private static readonly DeclaringTypeComparer comparer = new DeclaringTypeComparer();
+#endif
+
+		private Dictionary<string, MethodDefinition> logMap;
+		private Dictionary<string, FieldDefinition> instanceMap;
+		private Dictionary<string, MethodReference> isEnabledMap;
+		private Lazy<CallCollector> callCollector;
+
+		private bool enabled;
+
+		public FixStaticCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void BeforeModule(ModuleDefinition module)
 		{
-			var staticLoggers = loggers.OfType<StaticBasedEventSource>().ToArray();
-			if (staticLoggers.Length == 0) return;
+			var staticTracers = Implementations.OfType<StaticBasedEventSource>().ToArray();
+			if (staticTracers.Length == 0) return;
 
-			var logMap = staticLoggers.SelectMany(l => l.Methods).ToDictionary(m => m.Old.FullName, m => m.New);
-			var instanceMap = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => (FieldDefinition)eventSource.Meta["Instance"]);
-			var isEnabled = staticLoggers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => module.ImportReference(eventSource.New.FindMethod("IsEnabled")));
-			var comparer = new DeclaringTypeComparer();
-			var callCollector = new Lazy<CallCollector>(() => new CallCollector(module));
+			logMap = staticTracers.SelectMany(l => l.Methods).ToDictionary(m => m.Old.FullName, m => m.New);
+			instanceMap = staticTracers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => (FieldDefinition)eventSource.Meta["Instance"]);
+			isEnabledMap = staticTracers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => module.ImportReference(eventSource.New.FindMethod("IsEnabled")));
 
-			foreach (var method in WeaverHelpers.AllMethodsWithBody(module))
+			callCollector = new Lazy<CallCollector>(() => new CallCollector(module));
+			enabled = true;
+		}
+
+		public override MethodDefinition BeforeMethod(MethodDefinition method)
+		{
+			if (!enabled) return method;
+
+			var calls = callCollector.Value.Collect(method, r => instanceMap.ContainsKey(r.TargetMethod().DeclaringType.FullName));
+			if (calls.Length == 0) return method;
+
+#if DO_GUARDS
+			var groups = calls.SplitToSequences(comparer);
+#endif
+
+			using (var builder = new BodyBuilder(method.Body))
 			{
-				FieldDefinition instanceField = null;
-				var tmp = from op in method.GetOpsOf(OpCodes.Callvirt, OpCodes.Call)
-						  let cls = ((MemberReference)op.Operand).DeclaringType.FullName
-						  where instanceMap.TryGetValue(cls, out instanceField)
-						  select new { cls, instanceField };
-
-				var instanceFields = tmp.Distinct().ToDictionary(o => o.cls, o => o.instanceField);
-				if (instanceFields.Count > 0)
+#if DO_GUARDS
+				foreach (var group in groups)
 				{
-					var calls = callCollector.Value.Collect(method, r => instanceMap.ContainsKey(r.Method.DeclaringType.FullName));
-					var groups = calls.SplitToSequences(comparer);
+					var firstCall = group.First();
 
-					using (var builder = new BodyBuilder(method.Body))
+					var declaringTypeName = firstCall.Call.TargetMethod().DeclaringType.FullName;
+					var instance = instanceMap[declaringTypeName];
+
+					var label = builder.DefineLabel();
+
+					var start = firstCall.StartsAt;
+					builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, instance));
+					builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, isEnabledMap[declaringTypeName]));
+					builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
+
+					builder.InsertAfter(group.Last().Call, label);
+
+					foreach (var call in group)
 					{
-						foreach (var group in groups)
-						{
-							var firstCall = group.First();
+						builder.InsertBefore(call.StartsAt, Instruction.Create(OpCodes.Ldsfld, instance));
 
-							var declaringTypeName = firstCall.Call.OperandAsMethod().DeclaringType.FullName;
-							var instance = instanceFields[declaringTypeName];
-
-							var label = builder.DefineLabel();
-
-							var start = firstCall.StartsAt;
-							builder.InsertBefore(start, Instruction.Create(OpCodes.Ldsfld, instance));
-							builder.InsertBefore(start, Instruction.Create(OpCodes.Callvirt, isEnabled[declaringTypeName]));
-							builder.InsertBefore(start, Instruction.Create(OpCodes.Brfalse, label));
-
-							builder.InsertAfter(group.Last().Call, label);
-
-							foreach (var call in group)
-							{
-								builder.InsertBefore(call.StartsAt, Instruction.Create(OpCodes.Ldsfld, instance));
-
-								call.Call.OpCode = OpCodes.Callvirt;
-								call.Call.Operand = logMap[call.Call.OperandAsMethod().FullName];
-							}
-						}
+						call.Call.OpCode = OpCodes.Callvirt;
+						call.Call.Operand = logMap[call.Call.TargetMethod().FullName];
 					}
 				}
+#else
+				foreach (var call in calls)
+				{
+					var declaringTypeName = call.Call.TargetMethod().DeclaringType.FullName;
+					var instance = instanceMap[declaringTypeName];
+
+					builder.InsertBefore(call.StartsAt, Instruction.Create(OpCodes.Ldsfld, instance));
+
+					call.Call.OpCode = OpCodes.Callvirt;
+					call.Call.Operand = logMap[call.Call.TargetMethod().FullName];
+				}
+#endif
 			}
+
+			return method;
 		}
 
 		private class DeclaringTypeComparer : CallSequenceComparer

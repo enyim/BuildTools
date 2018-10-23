@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal abstract class TemplateBasedEventSourceBuilder
 	{
@@ -17,7 +17,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 		protected readonly ModuleDefinition Module;
 		protected readonly GuessingTypeDefs TypeDefs;
-		protected virtual bool EmitGuardedLoggers => false;
+		protected virtual bool EmitGuardedTracers => true;
 
 		protected virtual TypeDefinition CreateTargetType(TypeDefinition template)
 		{
@@ -52,19 +52,14 @@ namespace Enyim.Build.Weavers.EventSource
 		protected virtual ImplementedEventSource DoImplement(TypeDefinition template)
 		{
 			var targetType = CreateTargetType(template);
-			var implementer = new Implementer(Module, CreateEventSourceTemplate(template), targetType)
-			{
-				EmitGuardedLoggers = EmitGuardedLoggers
-			};
+			var implementer = new Implementer(Module, CreateEventSourceTemplate(template), targetType) { EmitGuardedTracers = EmitGuardedTracers };
 
-			var retval = new TemplateBasedEventSource
+			return new TemplateBasedEventSource
 			{
 				Old = template,
 				New = targetType,
 				Methods = implementer.Implement()
 			};
-
-			return retval;
 		}
 
 		protected virtual EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new EventSourceTemplate(template, TypeDefs);
@@ -76,13 +71,15 @@ namespace Enyim.Build.Weavers.EventSource
 			private readonly TypeDefinition target;
 
 			public Implementer(ModuleDefinition module, EventSourceTemplate template, TypeDefinition target)
-			  : base(module, template) => this.target = target;
+				: base(module, template)
+			{
+				this.target = target;
+			}
 
-			public bool EmitGuardedLoggers { get; set; }
+			public bool EmitGuardedTracers { get; set; }
 
 			protected override TypeDefinition MkNested(string name) => module.NewType(target, name, null, TypeAttributes.NestedPublic | TypeAttributes.Abstract | TypeAttributes.Sealed);
-
-			protected override TypeDefinition GetNested(string name) => target.NestedTypes.FirstOrDefault(t => t.Name == name);
+			protected override TypeDefinition GetNested(string name) => target.NestedTypes.Named(name);
 
 			protected override MethodDefinition ImplementGuardMethod(GuardMethod metadata)
 			{
@@ -92,12 +89,12 @@ namespace Enyim.Build.Weavers.EventSource
 				source.CopyAttrsTo(newMethod);
 				target.Methods.Add(newMethod);
 
-				SetGuardMethodBody(newMethod, metadata.LoggerTemplate.Level, metadata.LoggerTemplate.Keywords);
+				SetGuardMethodBody(newMethod, metadata.TraceTemplate.Level, metadata.TraceTemplate.Keywords);
 
 				return newMethod;
 			}
 
-			protected override MethodDefinition ImplementLogMethod(LogMethod metadata)
+			protected override MethodDefinition ImplementTraceMethod(TraceMethod metadata)
 			{
 				var source = metadata.Method;
 				var newMethod = new MethodDefinition(source.Name, MethodAttributes.Public, module.ImportReference(source.ReturnType));
@@ -108,7 +105,7 @@ namespace Enyim.Build.Weavers.EventSource
 
 				source.CopyAttrsTo(newMethod);
 
-				SetLogMethodBody(newMethod, metadata, EmitGuardedLoggers);
+				SetTraceMethodBody(newMethod, metadata, EmitGuardedTracers);
 				UpdateEventAttribute(newMethod, metadata);
 
 				return newMethod;

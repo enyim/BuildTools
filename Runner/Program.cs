@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,67 +17,27 @@ namespace Runner
 	{
 		private static void Main(string[] args)
 		{
-			args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -w Enyim.Build.Rewriters.LogTo.dll".Split(' ');
-			args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -w Enyim.Build.Rewriters.EventSource.dll".Split(' ');
+			//args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -r Enyim.Build.Rewriters.LogTo.dll -p A=1 -p B=2 -p C=3".Split(' ');
+			args = @"-s D:\Repo\BuildTools\Target\bin\Debug\Target.dll -o d:\lofasz.dll -r Enyim.Build.Rewriters.EventSource.dll".Split(' ');
 
 			try
 			{
-				var logger = new ColoredConsoleLogger();
+				ConsoleLoggerProvider.Install();
+
 				var options = new Options();
 				if (options.Parse(args))
 				{
-					var weaver = new Weaver(Assembly.LoadFile(options.Weaver.FullName), logger);
-					weaver.SetProperties(options.Properties);
-					var result = weaver.Rewrite(options.Source.FullName);
-
-					Save(result, options);
+					new Rewriter().Rewrite(options);
 				}
 			}
 			catch (Exception e)
 			{
 				ConsoleHelper.ColoredWriteLine(ConsoleColor.Red, e.Message);
 			}
+
+			if (Debugger.IsAttached)
+				Console.ReadLine();
 		}
-
-		private static void Save(ModuleDefinition module, Options options)
-		{
-			var key = options.KeyFile == null ? null : new StrongNameKeyPair(options.KeyFile.OpenRead());
-			var target = (options.Target ?? options.Source).FullName;
-
-			module.Write(target, new WriterParameters
-			{
-				StrongNameKeyPair = key,
-				WriteSymbols = module.HasSymbols
-			});
-		}
-
-		//static void Main2(string[] args)
-		//{
-		//	//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Debug\Enyim.Caching.Core.dll";
-		//	//var path = @"D:\Dropbox\Repo\enyimmemcached2\Core\bin\Release\Enyim.Caching.Core.dll";
-		//	var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Release\Enyim.Caching.Memcached.dll";
-		//	//var path = @"D:\Dropbox\repo\enyimmemcached2\Memcached\bin\Release\Enyim.Caching.Memcached.dll";
-		//	//var path = typeof(Target.CombinedTests).Assembly.Location;
-
-		//	var module = ModuleDefinition.ReadModule(path, new ReaderParameters { AssemblyResolver = new WeaverAssembyResolver(path) });
-
-		//	new Weavers.LogToWeaver
-		//	{
-		//		ModuleDefinition = module,
-		//		LogInfo = Console.WriteLine,
-		//		LogWarning = Console.WriteLine,
-		//		LogError = Console.WriteLine
-		//	}.Execute();
-		//	new Weavers.EventSourceWeaver
-		//	{
-		//		ModuleDefinition = module,
-		//		LogInfo = Console.WriteLine,
-		//		LogWarning = Console.WriteLine,
-		//		LogError = Console.WriteLine
-		//	}.Execute();
-
-		//	module.Write("d:\\out.dll");
-		//}
 	}
 }
 

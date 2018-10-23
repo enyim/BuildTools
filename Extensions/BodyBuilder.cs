@@ -15,7 +15,6 @@ namespace Enyim.Build
 
 		private readonly HashSet<Instruction> labels;
 		private readonly Dictionary<string, VariableDefinition> variables;
-		private readonly Dictionary<int, Instruction> byOffset;
 
 		public BodyBuilder(MethodDefinition method) : this(method.Body) { }
 
@@ -26,8 +25,6 @@ namespace Enyim.Build
 
 			labels = new HashSet<Instruction>();
 			variables = new Dictionary<string, VariableDefinition>();
-
-			byOffset = instructions.ToDictionary(i => i.Offset);
 
 			// converts (amongst others) all short jumps into long ones
 			// making sure that when a large amount of code is inserted the
@@ -49,6 +46,15 @@ namespace Enyim.Build
 				labels.Clear();
 			}
 
+			// fix offsets
+			var offset = 0;
+
+			foreach (var instruction in body.Instructions)
+			{
+				instruction.Offset = offset;
+				offset += instruction.GetSize();
+			}
+
 			// convert long form of operations into short form where possible
 			body.OptimizeMacros();
 		}
@@ -61,7 +67,6 @@ namespace Enyim.Build
 			return nop;
 		}
 
-		public Instruction GetAtOffset(int offset) => byOffset[offset];
 		public void InsertBefore(Instruction where, Instruction what) => instructions.Insert(instructions.IndexOf(where), what);
 		public void InsertAfter(Instruction where, Instruction what) => instructions.Insert(instructions.IndexOf(where) + 1, what);
 

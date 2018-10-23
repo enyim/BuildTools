@@ -1,12 +1,19 @@
-using System;
-using System.Collections.Generic;
-using Mono.Cecil;
+﻿using System;
+using NDesk.Options;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build
 {
-	internal interface IProcessEventSources
+	internal static class OptionSetExtensions
 	{
-		void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers);
+		public static OptionSet AddEnumSwitch<TEnum>(this OptionSet set, string prototype, string description, Action<TEnum> setter)
+			where TEnum : struct
+		{
+			return set.Add(prototype, description + " (" + String.Join(", ", Enum.GetNames(typeof(TEnum))) + ")", s =>
+			{
+				if (Enum.TryParse<TEnum>(s, out var value))
+					setter(value);
+			});
+		}
 	}
 }
 

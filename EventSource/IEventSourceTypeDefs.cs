@@ -1,7 +1,7 @@
 ﻿using System;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal interface IEventSourceTypeDefs
 	{

@@ -8,12 +8,14 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal abstract class EventSourceImplementerBase
 	{
+		private static readonly ILog log = LogManager.GetLogger<EventSourceImplementerBase>();
+
 		protected const string GuardPrefix = "Can";
-		protected static readonly HashSet<string> SpecialMethods = new HashSet<string>("IsEnabled".Once());
+		protected static readonly HashSet<string> SpecialMethods = new HashSet<string> { "IsEnabled" };
 
 		protected readonly ModuleDefinition module;
 		protected readonly EventSourceTemplate template;
@@ -36,7 +38,7 @@ namespace Enyim.Build.Weavers.EventSource
 #endif
 		}
 
-		protected abstract MethodDefinition ImplementLogMethod(LogMethod metadata);
+		protected abstract MethodDefinition ImplementTraceMethod(TraceMethod metadata);
 		protected abstract MethodDefinition ImplementGuardMethod(GuardMethod metadata);
 
 		protected abstract TypeDefinition MkNested(string name);
@@ -45,14 +47,14 @@ namespace Enyim.Build.Weavers.EventSource
 		public virtual Implemented<MethodDefinition>[] Implement()
 		{
 			var retval = template
-							.Loggers.Select(meta => Implemented.Create(meta.Method, ImplementLogMethod(meta)))
+							.Tracers.Select(meta => Implemented.Create(meta.Method, ImplementTraceMethod(meta)))
 							.Concat(template.Guards.Select(meta => Implemented.Create(meta.Template, ImplementGuardMethod(meta))))
 							.ToArray();
 
 			return retval;
 		}
 
-		protected void UpdateEventAttribute(MethodDefinition target, LogMethod metadata)
+		protected void UpdateEventAttribute(MethodDefinition target, TraceMethod metadata)
 		{
 			var ea = metadata.EventAttribute;
 			if (ea == null)
@@ -86,7 +88,7 @@ namespace Enyim.Build.Weavers.EventSource
 			target.Fields.Add(field);
 		}
 
-		protected void SetLogMethodBody(MethodDefinition target, LogMethod metadata, bool implementGuard = true)
+		protected void SetTraceMethodBody(MethodDefinition target, TraceMethod metadata, bool implementGuard = true)
 		{
 			target.CustomAttributes.Add(module.NewAttr(typeof(CompilerGeneratedAttribute)));
 
@@ -124,9 +126,10 @@ namespace Enyim.Build.Weavers.EventSource
 			body.Add(Instruction.Create(OpCodes.Ret));
 		}
 
-		protected IEnumerable<Instruction> EmitIsEnabled(EventLevel? level, EventKeywords? keywords) => !level.HasValue || !keywords.HasValue
-					? EmitIsEnabledFallback()
-					: EmitSpecificIsEnabled(level.Value, keywords.Value);
+		protected IEnumerable<Instruction> EmitIsEnabled(EventLevel? level, EventKeywords? keywords)
+			=> !level.HasValue || !keywords.HasValue
+				? EmitIsEnabledFallback()
+				: EmitSpecificIsEnabled(level.Value, keywords.Value);
 
 		private IEnumerable<Instruction> EmitIsEnabledFallback()
 		{
@@ -140,7 +143,7 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Ldc_I4, (int)level);
 
 			var kw = (long)keywords;
-			if (kw >= int.MinValue && kw <= int.MaxValue)
+			if (kw >= Int32.MinValue && kw <= Int32.MaxValue)
 			{
 				yield return Instruction.Create(OpCodes.Ldc_I4, (int)kw);
 				yield return Instruction.Create(OpCodes.Conv_I8);
@@ -153,9 +156,9 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Call, typeDefs.IsEnabledSpecific);
 		}
 
-		private IEnumerable<Instruction> WriteEvent(BodyBuilder builder, MethodDefinition method, LogMethod metadata)
+		private IEnumerable<Instruction> WriteEvent(BodyBuilder builder, MethodDefinition method, TraceMethod metadata)
 		{
-			var specificArgs = module.TypeSystem.Int32.Once()
+			var specificArgs = new[] { module.TypeSystem.Int32 }
 									.Concat(method.Parameters
 													.Select(p => ConvertToWriteEventParamType(p.ParameterType.Resolve())));
 
@@ -170,7 +173,7 @@ namespace Enyim.Build.Weavers.EventSource
 					: EmitWriteEventFallback(method, metadata);
 		}
 
-		private IEnumerable<Instruction> EmitSpecificWriteEvent(BodyBuilder builder, MethodDefinition method, MethodReference writeEvent, LogMethod metadata)
+		private IEnumerable<Instruction> EmitSpecificWriteEvent(BodyBuilder builder, MethodDefinition method, MethodReference writeEvent, TraceMethod metadata)
 		{
 			yield return Instruction.Create(OpCodes.Ldarg_0);
 			yield return Instruction.Create(OpCodes.Ldc_I4, metadata.Id);
@@ -185,9 +188,9 @@ namespace Enyim.Build.Weavers.EventSource
 			yield return Instruction.Create(OpCodes.Call, module.ImportReference(writeEvent));
 		}
 
-		private IEnumerable<Instruction> EmitWriteEventFallback(MethodDefinition method, LogMethod metadata)
+		private IEnumerable<Instruction> EmitWriteEventFallback(MethodDefinition method, TraceMethod metadata)
 		{
-			Log.Warn(string.Format("Using WriteEvent fallback for {0}", method.FullName));
+			log.Warn($"Using WriteEvent fallback for {method.FullName}");
 
 			yield return Instruction.Create(OpCodes.Ldarg_0);
 			yield return Instruction.Create(OpCodes.Ldc_I4, metadata.Id);

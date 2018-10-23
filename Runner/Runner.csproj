@@ -22,7 +22,7 @@
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AssemblyInfo\AssemblyInfo.csproj" />
+    <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\EventSource\EventSource.csproj" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
     <ProjectReference Include="..\LogTo\LogTo.csproj" />

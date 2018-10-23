@@ -5,19 +5,24 @@ using System.Linq;
 using Enyim.Build;
 using NDesk.Options;
 
-namespace Runner
+namespace Enyim.Build
 {
+	public enum DebugSymbolsKind { None, Embedded, Portable };
+
 	internal class Options
 	{
-		private bool help;
+		private bool showHelp;
 
-		public Options() => Properties = new List<KeyValuePair<string, string>>();
-
-		public FileInfo Weaver { get; private set; }
+		public FileInfo Rewriter { get; private set; }
 		public FileInfo Source { get; private set; }
 		public FileInfo Target { get; private set; }
+
+		public bool SignAssembly { get; private set; }
 		public FileInfo KeyFile { get; private set; }
-		public List<KeyValuePair<string, string>> Properties { get; }
+
+		public DebugSymbolsKind Symbols { get; private set; }
+
+		public List<KeyValuePair<string, string>> Properties { get; } = new List<KeyValuePair<string, string>>();
 
 		public bool Parse(string[] args)
 		{
@@ -26,7 +31,7 @@ namespace Runner
 				var set = CreateOptionSet();
 				var extra = set.Parse(args);
 
-				if (help)
+				if (showHelp)
 				{
 					Console.Write("Usage: runner OPTIONS");
 					set.WriteOptionDescriptions(Console.Out);
@@ -54,42 +59,44 @@ namespace Runner
 		private OptionSet CreateOptionSet()
 			=> new OptionSet
 			{
-				{ "w|weaver=", "The path to the weaver assembly.", s => Weaver = new FileInfo(s) },
-				{ "p=", "A configuration property in the form of 'name=value'.", s =>
+				{ "r|rewriter=", "The path to the rewriter plugin's assembly.", value => Rewriter = new FileInfo(value) },
+				{ "s|source=", "The path source assembly.", value => Source = new FileInfo(value) },
+				{ "o|output=", "The path to the output assembly.", value => Target = new FileInfo(value) },
+				{ "sign+", "If the assembly should be signed", value => SignAssembly = !String.IsNullOrWhiteSpace(value) },
+				{ "key=", "The path of signining key to be used", value => KeyFile = new FileInfo(value) },
+				{ "p=", "A configuration property in the form of 'name=value'.", value =>
 					{
-						if (s!= null)
+						if (value!= null)
 						{
-							var idx = s.IndexOf('=');
-							if (idx < 0) throw new InvalidOperationException("Invalid property: " + s);
+							var idx = value.IndexOf('=');
+							if (idx < 0) throw new InvalidOperationException("Invalid property: " + value);
 
-							Properties.Add(new KeyValuePair<string, string>(s.Remove(idx), s.Substring(idx + 1)));
+							Properties.Add(new KeyValuePair<string, string>(value.Remove(idx), value.Substring(idx + 1)));
 						}
 					}
 				},
-				{ "s|source=", "The path source assembly.", s => Source = new FileInfo(s) },
-				{ "o|output=", "The path to the output assembly.", s => Target = new FileInfo(s) },
-				{ "key=", "The path of signining key to be used", s => KeyFile = new FileInfo(s) },
-				{ "h|help", "Shows the help.", s => help = s != null },
-			};
+				{ "?|h|help", "Shows the help.", value => showHelp = !String.IsNullOrWhiteSpace(value) },
+			}
+			.AddEnumSwitch<DebugSymbolsKind>("symbols=", "If debug symbols should be emitted and in what format.", value => Symbols = value);
 
 		private void Validate()
 		{
 			Required("source", Source);
-			MustExist("source", Source);
+			MustExistIfSet("source", Source);
 
-			Required("weaver", Weaver);
-			MustExist("weaver", Weaver);
+			Required("rewriter", Rewriter);
+			MustExistIfSet("rewriter", Rewriter);
 
-			MustExist("key", KeyFile);
+			MustExistIfSet("key", KeyFile);
 		}
 
 		private void Required<T>(string arg, T value)
 		{
-			if (value.Equals(default(T)))
+			if (value.Equals(default))
 				throw new InvalidOperationException("Missing argument: " + arg);
 		}
 
-		private void MustExist(string arg, FileInfo file)
+		private void MustExistIfSet(string arg, FileInfo file)
 		{
 			if (file?.Exists == false)
 				throw new InvalidOperationException($"Invalid argument {arg}: File not found.");

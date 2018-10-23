@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Target
 {
-	class StaticEventSourceTests
+	internal class StaticEventSourceTests
 	{
 		public void Hello()
 		{

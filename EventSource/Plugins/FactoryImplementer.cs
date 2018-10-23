@@ -4,77 +4,87 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(int.MinValue)]
-	internal class FactoryImplementer : IProcessEventSources
+	// replaces the EventSourceFactory.Get<TEventSource>() calls with 'new TImplementedEventSource()'
+	internal class FactoryImplementer : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		private static readonly ILog log = LogManager.GetLogger<FactoryImplementer>();
+
+		private TypeReference factory;
+		private Dictionary<string, ImplementedEventSource> implMap;
+		private string fullNameOfGet;
+		private Dictionary<string, TypeDefinition> rewrittenTypeReferences;
+		private bool enabled;
+
+		public FactoryImplementer(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void BeforeModule(ModuleDefinition module)
 		{
-			var factory = module.IncludeReferencedTypes().FirstOrDefault(t => t.Name == "EventSourceFactory");
+			// EventSourceFactory must be an empty class in the target assembly
+			factory = module.IncludeReferencedTypes().Named("EventSourceFactory");
 			if (factory == null) return;
 
-			var implMap = loggers.ToDictionary(l => l.Old.FullName);
+			// check if any loggers have been implemented
+			implMap = Implementations.ToDictionary(l => l.Old.FullName);
 			if (implMap.Count == 0) return;
 
-			var fullNameOfGet = module.ImportReference(factory).Resolve().FindMethod("Get").FullName;
-			var methods = WeaverHelpers.AllMethodsWithBody(module).ToArray();
-			var mapped = new Dictionary<string, TypeDefinition>();
+			// get the TEventSource from the Get<TEventSource>() method
+			fullNameOfGet = module.ImportReference(factory).Resolve().FindMethod("Get").ToString();
+			rewrittenTypeReferences = new Dictionary<string, TypeDefinition>();
+			enabled = true;
+		}
 
-			foreach (var method in methods)
+		public override TypeDefinition BeforeType(TypeDefinition type) => CilComparer.AreSame(type, factory) ? null : type;
+
+		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
+		{
+			if (enabled && instruction.OpCode == OpCodes.Call)
 			{
-				var calls = (from i in method.GetOpsOf(OpCodes.Call)
-							 let mr = i.Operand as MethodReference
-							 where mr.IsGenericInstance
-								   && mr.Resolve().GetElementMethod().FullName == fullNameOfGet
-							 select new
-							 {
-								 Instruction = i,
-								 Wanted = ((GenericInstanceMethod)mr).GenericArguments[0].Resolve()
-							 }).ToArray();
-
-				if (calls.Length != 0)
+				var mr = instruction.TargetMethod();
+				if (mr.IsGenericInstance && mr.GetElementMethod().ToString() == fullNameOfGet)
 				{
-					var ilp = method.Body.GetILProcessor();
-					foreach (var call in calls)
-					{
-						// if the factory creates an interface, resolve it to the implemenetd type
-						// otherwise use the type argument from the generic method
-						var target = call.Wanted.IsClass
-										? call.Wanted.Resolve()
-										: implMap.TryGetValue(call.Wanted.FullName, out var ie)
-											? ie.New
-											: null;
-						if (target == null)
-						{
-							Log.Warn($"Factory: cannot rewrite {call.Wanted.FullName}");
-							continue;
-						}
+					var requestedType = ((GenericInstanceMethod)mr).GenericArguments[0].Resolve();
 
+					// if the factory creates an interface, resolve it to the implemented type
+					// otherwise use the type argument from the generic method
+					var target = requestedType.IsClass
+									? requestedType.Resolve()
+									: implMap.TryGetValue(requestedType.FullName, out var ie)
+										? ie.New
+										: null;
+					if (target != null)
+					{
 						var ctor = target.FindConstructor();
 						if (ctor == null)
 							throw new InvalidOperationException($"{target.FullName} has no constructor");
 
-						var @new = Instruction.Create(OpCodes.Newobj, ctor);
-						//@new.SequencePoint = method.DebugInformation.GetSequencePoint(call.Instruction);
-						ilp.Replace(call.Instruction, @new);
+						rewrittenTypeReferences[requestedType.FullName] = target;
+						log.Info($"Factory: {requestedType} -> {target}");
 
-						Log.Info($"Factory: {call.Wanted.FullName} -> {target.FullName}");
-						mapped[call.Wanted.FullName] = target;
+						return Instruction.Create(OpCodes.Newobj, ctor);
+					}
+					else
+					{
+						log.Warn($"Factory: cannot rewrite {requestedType}, no target type was found");
 					}
 				}
-
-				RewriteLocalVariables(method, mapped);
 			}
+
+			return instruction;
 		}
 
-		private static void RewriteLocalVariables(MethodDefinition method, IReadOnlyDictionary<string, TypeDefinition> mapped)
+		public override void AfterMethod(MethodDefinition method)
 		{
-			foreach (var v in method.Body.Variables)
+			// fix the local variables so they point to the new implementation
+			if (method.HasBody)
 			{
-				if (mapped.TryGetValue(v.VariableType.FullName, out var target))
+				foreach (var v in method.Body.Variables)
 				{
-					v.VariableType = target;
+					if (rewrittenTypeReferences.TryGetValue(v.VariableType.FullName, out var target))
+					{
+						v.VariableType = target;
+					}
 				}
 			}
 		}

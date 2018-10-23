@@ -1,12 +1,17 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	internal static class Log
+	internal abstract class EventSourceRewriter : ModuleVisitorBase
 	{
-		public static Action<string> Warn;
-		public static Action<string> Error;
-		public static Action<string> Info;
+		protected EventSourceRewriter(IEnumerable<ImplementedEventSource> implementations)
+		{
+			Implementations = implementations;
+		}
+
+		public IEnumerable<ImplementedEventSource> Implementations { get; }
 	}
 }
 

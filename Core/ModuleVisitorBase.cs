@@ -4,35 +4,27 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build
 {
-	internal class RewriteEventSourceCalls : EventSourceRewriter
+	public abstract class ModuleVisitorBase : IModuleVisitor
 	{
-		private readonly Dictionary<string, MethodDefinition> implMap;
+		protected ModuleVisitorBase() { }
 
-		public RewriteEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
-		{
-			implMap = implementations
-						.OfType<InterfaceBasedEventSource>()
-						.SelectMany(ies => ies.Methods)
-						.ToDictionary(m => m.Old.ToString(), m => m.New);
-		}
+		public virtual void BeforeModule(ModuleDefinition module) { }
+		public virtual void AfterModule(ModuleDefinition module) { }
 
-		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
-		{
-			if (instruction.Is(OpCodes.Callvirt, OpCodes.Call))
-			{
-				var callSite = instruction.TargetMethod();
+		public virtual TypeDefinition BeforeType(TypeDefinition type) => type;
+		public virtual void AfterType(TypeDefinition type) { }
 
-				if (implMap.TryGetValue(callSite.ToString(), out var newMethod))
-				{
-					instruction.OpCode = OpCodes.Callvirt;
-					instruction.Operand = newMethod;
-				}
-			}
+		public virtual MethodDefinition BeforeMethod(MethodDefinition method) => method;
+		public virtual Instruction MethodInstruction(MethodDefinition owner, Instruction instruction) => instruction;
+		public virtual void AfterMethod(MethodDefinition method) { }
 
-			return instruction;
-		}
+		public virtual PropertyDefinition BeforeProperty(PropertyDefinition property) => property;
+		public virtual void AfterProperty(PropertyDefinition property) { }
+
+		public virtual FieldDefinition BeforeField(FieldDefinition field) => field;
+		public virtual void AfterField(FieldDefinition field) { }
 	}
 }
 

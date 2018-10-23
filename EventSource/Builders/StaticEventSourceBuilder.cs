@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class StaticEventSourceBuilder : TemplateBasedEventSourceBuilder
 	{
@@ -11,6 +11,9 @@ namespace Enyim.Build.Weavers.EventSource
 		public StaticBasedEventSource Implement(TypeDefinition template)
 		{
 			var previous = DoImplement(template);
+			if (previous.Old.Name.Contains("_"))
+				Console.WriteLine(1);
+
 			previous.Old.Name += "_" + Guid.NewGuid().ToString("N");
 			previous.Old.CopyAttrsTo(previous.New);
 
@@ -24,18 +27,15 @@ namespace Enyim.Build.Weavers.EventSource
 			return retval;
 		}
 
-		protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new StaticTemplate(template, TypeDefs);
-
+	protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new StaticTemplate(template, TypeDefs);
 		protected override string GetTargetTypeName(TypeDefinition template) => template.Name;
-
-		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName) => template.NestedTypes.FirstOrDefault(t => t.Name == nestedName);
+		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName) => template.NestedTypes.Named(nestedName);
 
 		private class StaticTemplate : EventSourceTemplate
 		{
 			public StaticTemplate(TypeDefinition type, IEventSourceTypeDefs typeDefs) : base(type, typeDefs) { }
 
-			protected override bool IsLogMethod(MethodDefinition m) => base.IsLogMethod(m) && m.IsStatic;
-
+			protected override bool IsTraceMethod(MethodDefinition m) => base.IsTraceMethod(m) && m.IsStatic;
 			protected override bool IsGuardMethod(MethodDefinition m) => base.IsGuardMethod(m) && m.IsStatic;
 		}
 	}

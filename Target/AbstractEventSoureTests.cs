@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace Target
 {
-	class AbstractEventSourceTests
+	internal class AbstractEventSourceTests
 	{
-		AbstractEventSource trace = EventSourceFactory.Get<AbstractEventSource>();
+		private AbstractEventSource trace = EventSourceFactory.Get<AbstractEventSource>();
 
 		public void Hello()
 		{
@@ -19,6 +19,14 @@ namespace Target
 			trace.ReceiveStop("aaaa", false, true);
 		}
 
+		public void LocalHello()
+		{
+			var localTrace = EventSourceFactory.Get<AbstractEventSource>();
+
+			localTrace.ConnectStart("aaaa");
+			localTrace.ConnectStart("aaaa");
+			localTrace.ReceiveStop("aaaa", false, true);
+		}
 	}
 
 	[EventSource(Name = "Enyim-Caching-Core")]

@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
-	[Order(int.MaxValue)]
-	internal class RemoveStaticTemplates : IProcessEventSources
+	internal class RemoveStaticTemplates : EventSourceRewriter
 	{
-		public void Rewrite(ModuleDefinition module, IEnumerable<ImplementedEventSource> loggers)
+		public RemoveStaticTemplates(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
+
+		public override void AfterModule(ModuleDefinition module)
 		{
-			foreach (var ie in loggers.OfType<StaticBasedEventSource>())
+			foreach (var ie in Implementations.OfType<StaticBasedEventSource>())
 			{
 				module.Types.Remove(ie.Old);
 			}

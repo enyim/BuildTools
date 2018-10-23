@@ -1,13 +1,13 @@
 ﻿using System;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class GuardMethod
 	{
 		public bool IsTemplate;
 		public MethodDefinition Template;
-		public LogMethod LoggerTemplate;
+		public TraceMethod TraceTemplate;
 	}
 }
 

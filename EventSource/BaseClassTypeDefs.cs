@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.EventSource
+namespace Enyim.Build.Rewriters.EventSource
 {
 	internal class BaseClassTypeDefs : IEventSourceTypeDefs
 	{
@@ -31,9 +31,9 @@ namespace Enyim.Build.Weavers.EventSource
 			IsEnabledSpecific = BaseTypeImpl.FindMethod("IsEnabled", EventLevel, EventKeywords).ImportInto(module);
 			IsEnabledFallback = BaseTypeImpl.FindMethod("IsEnabled").ImportInto(module);
 			WriteEventFallback = BaseTypeImpl.FindMethod("WriteEvent", module.TypeSystem.Int32, module.ImportReference(typeof(object[]))).ImportInto(module);
-			WriteEventCore = BaseTypeImpl.Methods.First(m => m.Name == "WriteEventCore").ImportInto(module);
+			WriteEventCore = BaseTypeImpl.Methods.Named("WriteEventCore").ImportInto(module);
 
-			EventDataRef = BaseTypeImpl.NestedTypes.First(t => t.Name == "EventData").ImportInto(module);
+			EventDataRef = BaseTypeImpl.NestedTypes.Named("EventData").ImportInto(module);
 			EventDataImpl = EventDataRef.Resolve();
 			EventDataSetDataPointer = EventDataImpl.Properties.Named("DataPointer").SetMethod.ImportInto(module);
 			EventDataSetSize = EventDataImpl.Properties.Named("Size").SetMethod.ImportInto(module);

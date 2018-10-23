@@ -2,36 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace Enyim.Build.Rewriters.EventSource
 {
-	internal class RewriteEventSourceCalls : EventSourceRewriter
+	internal class RemoveInterfaceTemplates : EventSourceRewriter
 	{
-		private readonly Dictionary<string, MethodDefinition> implMap;
+		public RemoveInterfaceTemplates(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
 
-		public RewriteEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		public override void AfterModule(ModuleDefinition module)
 		{
-			implMap = implementations
-						.OfType<InterfaceBasedEventSource>()
-						.SelectMany(ies => ies.Methods)
-						.ToDictionary(m => m.Old.ToString(), m => m.New);
-		}
-
-		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
-		{
-			if (instruction.Is(OpCodes.Callvirt, OpCodes.Call))
+			foreach (var ie in Implementations.OfType<InterfaceBasedEventSource>())
 			{
-				var callSite = instruction.TargetMethod();
-
-				if (implMap.TryGetValue(callSite.ToString(), out var newMethod))
-				{
-					instruction.OpCode = OpCodes.Callvirt;
-					instruction.Operand = newMethod;
-				}
+				module.Types.Remove(ie.Old);
 			}
-
-			return instruction;
 		}
 	}
 }

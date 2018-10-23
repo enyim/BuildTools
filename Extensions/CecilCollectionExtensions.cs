@@ -1,18 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mono.Collections.Generic;
 
-namespace Runner
+namespace Enyim.Build
 {
-	internal class ColoredConsoleLogger : ILogger
+	public static class CecilCollectionExtensions
 	{
-		public void Info(string message) => Log(ConsoleColor.White, "INFO ", message);
+		public static void Add<T>(this Collection<T> source, IEnumerable<T> what)
+		{
+			foreach (var obj in what)
+				source.Add(obj);
+		}
 
-		public void Warn(string message) => Log(ConsoleColor.Yellow, "WARN ", message);
+		public static void Add<T>(this Collection<T> source, params T[] what)
+		{
+			foreach (var obj in what)
+				source.Add(obj);
+		}
 
-		public void Error(string message) => Log(ConsoleColor.Red, "ERROR", message);
-
-		private static void Log(ConsoleColor fg, string level, string message) => ConsoleHelper.ColoredWriteLine(fg, $"    {level} {message}");
+		public static void Remove<T>(this Collection<T> source, IEnumerable<T> what)
+		{
+			foreach (var obj in what)
+				source.Remove(obj);
+		}
 	}
 }
 

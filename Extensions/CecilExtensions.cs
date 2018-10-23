@@ -56,76 +56,22 @@ namespace Enyim.Build
 			}
 		}
 
-		public static CustomAttribute Clone(this CustomAttribute what)
+		public static T Named<T>(this Collection<T> source, string name) where T : MemberReference
 		{
-			var customAttribute = new CustomAttribute(what.Constructor);
-
-			foreach (var arg in what.ConstructorArguments)
-				customAttribute.ConstructorArguments.Add(new CustomAttributeArgument(arg.Type, arg.Value));
-
-			foreach (var prop in what.Properties)
-				customAttribute.Properties.Add(new CustomAttributeNamedArgument(prop.Name, new CustomAttributeArgument(prop.Argument.Type, prop.Argument.Value)));
-
-			foreach (var field in what.Fields)
-				customAttribute.Fields.Add(new CustomAttributeNamedArgument(field.Name, new CustomAttributeArgument(field.Argument.Type, field.Argument.Value)));
-
-			return customAttribute;
-		}
-
-		public static void CopyAttrsTo(this ICustomAttributeProvider source, ICustomAttributeProvider target)
-		{
-			foreach (var what in source.CustomAttributes)
-				target.CustomAttributes.Add(what.Clone());
-		}
-
-		public static bool IsAttrDefined<T>(this ICustomAttributeProvider source) => source.GetAttr<T>() != null;
-
-		public static CustomAttribute GetAttr<T>(this ICustomAttributeProvider source)
-		{
-			var expected = typeof(T).FullName;
-
-			return source.CustomAttributes.FirstOrDefault(a => a.AttributeType.FullName == expected);
-		}
-
-		public static CustomAttribute Named(this Collection<CustomAttribute> source, string name) => source.FirstOrDefault(a => a.AttributeType.Name == name);
-
-		public static T Named<T>(this Collection<T> source, string name)
-			where T : MemberReference => source.FirstOrDefault(p => p.Name == name);
-
-		public static T GetPropertyValue<T>(this CustomAttribute source, string name)
-		{
-			var prop = source.Properties.Named(name);
-
-			return prop.Name != null
-					? (T)prop.Argument.Value
-					: default;
-		}
-
-		public static void SetPropertyValue(this CustomAttribute source, string name, TypeReference type, object value)
-		{
-			var prop = source.Properties.Named(name);
-			if (prop.Name != null)
-				source.Properties.Remove(prop);
-
-			source.Properties.Add(new CustomAttributeNamedArgument(name, new CustomAttributeArgument(type, value)));
-		}
-
-		public static CustomAttributeNamedArgument Named(this Collection<CustomAttributeNamedArgument> source, string name) => source.FirstOrDefault(cana => cana.Name == name);
-
-		public static bool TryGetPropertyValue<T>(this CustomAttribute source, string name, out T value)
-		{
-			var prop = source.Properties.Named(name);
-
-			if (prop.Name == null)
+			if (source != null)
 			{
-				value = default;
-				return false;
+				for (int i = 0, max = source.Count; i < max; i++)
+				{
+					var current = source[i];
+					if (current.Name == name)
+						return current;
+				}
 			}
 
-			value = (T)prop.Argument.Value;
-
-			return true;
+			return null;
 		}
+
+		public static T Named<T>(this IEnumerable<T> source, string name) where T : MemberReference => source.FirstOrDefault(p => p.Name == name);
 
 		public static TypeDefinition NewType(this ModuleDefinition module, string @namespace, string name, TypeReference baseType = null, TypeAttributes attributes = TypeAttributes.Public)
 		{
@@ -169,82 +115,61 @@ namespace Enyim.Build
 			return method.Body.Instructions.Where(i => tmp.Contains(i.OpCode));
 		}
 
-		public static void Add<T>(this Collection<T> source, IEnumerable<T> what)
+		public static bool Is(this Instruction self, params OpCode[] ops)
 		{
-			foreach (var obj in what)
-				source.Add(obj);
-		}
+			foreach (var op in ops)
+			{
+				if (self.OpCode == op)
+					return true;
+			}
 
-		public static void Add<T>(this Collection<T> source, params T[] what)
-		{
-			foreach (var obj in what)
-				source.Add(obj);
-		}
-
-		public static void Remove<T>(this Collection<T> source, IEnumerable<T> what)
-		{
-			foreach (var obj in what)
-				source.Remove(obj);
+			return false;
 		}
 
 		public static MethodReference ImportInto(this MethodReference method, ModuleDefinition module) => module.ImportReference(method);
 
 		public static TypeReference ImportInto(this TypeReference type, ModuleDefinition module) => module.ImportReference(type);
 
-		public static CustomAttribute AddAttr<TAttribute>(this ICustomAttributeProvider self, ModuleDefinition module, params object[] ctorArgs) where TAttribute : Attribute
+		public static MethodDefinition GetOrCreateStaticConstructor(this TypeDefinition typeDef)
 		{
-			var retval = module.NewAttr(module.ImportReference(typeof(TAttribute)), ctorArgs);
-
-			self.CustomAttributes.Add(retval);
-
-			return retval;
-		}
-
-		public static CustomAttribute NewAttr(this ModuleDefinition module, Type attrType, params object[] ctorArgs) => module.NewAttr(module.ImportReference(attrType), ctorArgs);
-
-		public static CustomAttribute NewAttr(this ModuleDefinition module, TypeReference attrRef, params object[] ctorArgs)
-		{
-			var argTypes = ctorArgs.Select(o => o != null ? module.ImportReference(o.GetType()) : module.TypeSystem.Object).ToArray();
-			var retval = new CustomAttribute(module.ImportReference(attrRef.Resolve().FindConstructor(argTypes)));
-
-			for (var i = 0; i < ctorArgs.Length; i++)
-				retval.ConstructorArguments.Add(new CustomAttributeArgument(argTypes[i], ctorArgs[i]));
-
-			return retval;
-		}
-
-		public static FieldDefinition DeclareStaticField(this TypeDefinition typeDef, ModuleDefinition module, TypeReference fieldType, string name, Func<IEnumerable<Instruction>> init, FieldAttributes attributes = FieldAttributes.Private)
-		{
-			var retval = new FieldDefinition(name, FieldAttributes.Static | FieldAttributes.InitOnly | attributes, fieldType);
-			retval.AddAttr<CompilerGeneratedAttribute>(module);
-			typeDef.Fields.Insert(0, retval);
-
 			var cctor = typeDef.Methods.FirstOrDefault(m => m.IsConstructor && m.IsStatic);
 
 			if (cctor == null)
 			{
+				var module = typeDef.Module;
+
 				cctor = new MethodDefinition(".cctor", MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName, module.TypeSystem.Void);
-				typeDef.Methods.Insert(0, cctor);
 				cctor.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
 				cctor.AddAttr<CompilerGeneratedAttribute>(module);
+
+				typeDef.Methods.Add(cctor);
 			}
 
-			var body = cctor.Body.Instructions;
-			var index = 0;
+			return cctor;
+		}
 
-			foreach (var instruction in init())
-				body.Insert(index++, instruction);
+		public static FieldDefinition DeclareStaticField(this TypeDefinition typeDef, ModuleDefinition module, TypeReference fieldType, string name, Func<FieldDefinition, IEnumerable<Instruction>> init, FieldAttributes attributes = FieldAttributes.Private)
+		{
+			var field = new FieldDefinition(name, FieldAttributes.Static | FieldAttributes.InitOnly | attributes, fieldType);
+			field.AddAttr<CompilerGeneratedAttribute>(module);
 
-			body.Insert(index, Instruction.Create(OpCodes.Stsfld, retval));
+			typeDef
+				.Fields
+				.Add(field);
 
-			return retval;
+			typeDef
+				.GetOrCreateStaticConstructor()
+				.Body.Instructions
+					.Add(init(field));
+
+			return field;
 		}
 
 		public static IEnumerable<TypeDefinition> IncludeNestedTypes(this IEnumerable<TypeDefinition> source) => source.SelectMany(SelfAndNested);
 
-		private static IEnumerable<TypeDefinition> SelfAndNested(TypeDefinition type) => type.Once().Concat(type.NestedTypes.SelectMany(SelfAndNested));
+		private static IEnumerable<TypeDefinition> SelfAndNested(TypeDefinition type) => new[] { type }.Concat(type.NestedTypes.SelectMany(SelfAndNested));
 
-		public static MethodReference OperandAsMethod(this Instruction self) => (MethodReference)self.Operand;
+		public static MethodReference TargetMethod(this Instruction self) => (MethodReference)self.Operand;
 	}
 }
 

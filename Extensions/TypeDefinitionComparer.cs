@@ -1,37 +1,15 @@
-﻿using System;
-using System.Collections;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 
-namespace Enyim.Build.Weavers.LogTo
+namespace Enyim.Build
 {
-	public class ModuleWeaver : ModuleWeaverBase
+	public class TypeDefinitionComparer : IEqualityComparer<TypeDefinition>
 	{
-		protected override void OnExecute()
-		{
-			var logDef = new LogDefinition(ModuleDefinition);
-			var info = LogInfo ?? (_ => { });
+		public static readonly IEqualityComparer<TypeDefinition> Instance = new TypeDefinitionComparer();
 
-			if (!logDef.IsValid)
-			{
-				info("Could not find any of ILog, LogTo, LogManager, - or - no logging code was found.");
-			}
-			else
-			{
-				var types = (from t in ModuleDefinition.Types.IncludeNestedTypes()
-							 where t.IsClass && t.Name != "<Module>"
-							 select t).ToArray();
-
-				foreach (var typeDef in types)
-				{
-					new LoggerImplementer(logDef, ModuleDefinition, typeDef)
-					{
-						LogInfo = info
-					}.TryRewrite();
-				}
-			}
-		}
+		public bool Equals(TypeDefinition x, TypeDefinition y) => x.FullName == y.FullName;
+		public int GetHashCode(TypeDefinition obj) => obj.FullName.GetHashCode();
 	}
 }
 

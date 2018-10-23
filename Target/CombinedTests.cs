@@ -35,6 +35,10 @@ namespace Target
 			try
 			{
 				LogTo.Debug("a");
+				HellogTo.Debug("a");
+				LogTo.Debug("a");
+				HellogTo.Debug("a");
+				HellogTo.Hello("a");
 			}
 			catch { Console.WriteLine(1); }
 
@@ -47,8 +51,11 @@ namespace Target
 
 			try
 			{
+				HellogTo.Debug("0");
 				LogTo.Debug("5");
 				LogTo.Debug("6");
+				HellogTo.Debug("1");
+				HellogTo.Debug("2");
 			}
 			catch (InvalidCastException e1) { LogTo.Warn(e1); }
 			catch (Exception e2)

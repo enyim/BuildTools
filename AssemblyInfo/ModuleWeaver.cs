@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Enyim.Build.Weavers.LogTo
 {
-	public class ModuleWeaver : ModuleWeaverBase
+	public class ModuleWeaver : ModuleRewriter
 	{
 		public string Product { get; set; }
 		public string Company { get; set; }
