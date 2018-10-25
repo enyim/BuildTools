@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Target\AbstractEventSoureTests.cs" Link="AbstractEventSoureTests.cs" />
+    <Compile Include="..\Target\CombinedTests.cs" Link="CombinedTests.cs" />
+    <Compile Include="..\Target\InterfaceEventSourceTests.cs" Link="InterfaceEventSourceTests.cs" />
+    <Compile Include="..\Target\LogTests.cs" Link="LogTests.cs" />
+    <Compile Include="..\Target\StaticEventSourceTests.cs" Link="StaticEventSourceTests.cs" />
+  </ItemGroup>
+
+</Project>

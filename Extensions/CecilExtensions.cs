@@ -151,16 +151,19 @@ namespace Enyim.Build
 		public static FieldDefinition DeclareStaticField(this TypeDefinition typeDef, ModuleDefinition module, TypeReference fieldType, string name, Func<FieldDefinition, IEnumerable<Instruction>> init, FieldAttributes attributes = FieldAttributes.Private)
 		{
 			var field = new FieldDefinition(name, FieldAttributes.Static | FieldAttributes.InitOnly | attributes, fieldType);
+
 			field.AddAttr<CompilerGeneratedAttribute>(module);
+			typeDef.Fields.Add(field);
 
-			typeDef
-				.Fields
-				.Add(field);
+			// initializer must be inserted at the top of the ctor to not mess up the flow
+			// (e.g. the last instriction is a ret which can be a branch target)
+			var insertAt = 0;
+			var cctorBody = typeDef.GetOrCreateStaticConstructor().Body.Instructions;
 
-			typeDef
-				.GetOrCreateStaticConstructor()
-				.Body.Instructions
-					.Add(init(field));
+			foreach (var i in init(field))
+			{
+				cctorBody.Insert(insertAt++, i);
+			}
 
 			return field;
 		}

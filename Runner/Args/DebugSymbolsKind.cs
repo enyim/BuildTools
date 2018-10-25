@@ -1,29 +1,10 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Runner
+namespace Enyim.Build
 {
-	internal static class ConsoleHelper
-	{
-		public static void ColoredWriteLine(ConsoleColor fg, string message)
-		{
-			var tmp = Console.ForegroundColor;
-
-			Console.ForegroundColor = fg;
-			Console.WriteLine(message);
-			Console.ForegroundColor = tmp;
-		}
-
-		public static void ColoredWriteLine(ConsoleColor fg, string format, params object[] args)
-		{
-			var tmp = Console.ForegroundColor;
-
-			Console.ForegroundColor = fg;
-			Console.WriteLine(format, args);
-			Console.ForegroundColor = tmp;
-		}
-	}
+	public enum DebugSymbolsKind { None = 0, Embedded, Portable };
 }
 
 #region [ License information          ]

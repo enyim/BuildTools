@@ -1,18 +1,15 @@
-﻿using System;
-using NDesk.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using McMaster.Extensions.CommandLineUtils;
 
 namespace Enyim.Build
 {
-	internal static class OptionSetExtensions
+	internal static class CommandArgumentEx
 	{
-		public static OptionSet AddEnumSwitch<TEnum>(this OptionSet set, string prototype, string description, Action<TEnum> setter)
-			where TEnum : struct
+		public static CommandArgument<T> IsRequired<T>(this CommandArgument<T> argument, bool allowEmptyStrings = false, string errorMessage = null)
 		{
-			return set.Add(prototype, description + " (" + String.Join(", ", Enum.GetNames(typeof(TEnum))) + ")", s =>
-			{
-				if (Enum.TryParse<TEnum>(s, out var value))
-					setter(value);
-			});
+			return (CommandArgument<T>)ValidationExtensions.IsRequired(argument, allowEmptyStrings, errorMessage);
 		}
 	}
 }

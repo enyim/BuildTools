@@ -6,16 +6,19 @@ using Mono.Collections.Generic;
 namespace Enyim.Build
 {
 	/// <summary>
+	/// <para>
 	/// Code is based on Mono.Cecil.MetadataResolver
 	/// https://github.com/jbevain/cecil/blob/master/Mono.Cecil/MetadataResolver.cs
-	///
+	/// </para>
+	/// <para>
 	/// Author:
 	///   Jb Evain (jbevain@gmail.com)
-	///
+	/// </para>
+	/// <para>
 	/// Copyright (c) 2008 - 2015 Jb Evain
 	/// Copyright (c) 2008 - 2011 Novell, Inc.
-	///
-	/// Licensed under the MIT/X11 license.
+	/// </para>
+	/// <para>Licensed under the MIT/X11 license.</para>
 	///
 	/// </summary>
 	public static class CilComparer

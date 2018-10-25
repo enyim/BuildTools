@@ -18,8 +18,8 @@ namespace Enyim.Build.Rewriters.EventSource
 
 				impl.Meta["Instance"] = newType.DeclareStaticField(module, module.ImportReference(newType), "<>Instance", (field) => new[]
 				{
-					Instruction.Create(OpCodes.Stsfld, field),
-					Instruction.Create(OpCodes.Newobj, newType.FindConstructor(new TypeReference[0]))
+					Instruction.Create(OpCodes.Newobj, newType.FindConstructor(new TypeReference[0])),
+					Instruction.Create(OpCodes.Stsfld, field)
 				}, FieldAttributes.Public);
 			}
 		}

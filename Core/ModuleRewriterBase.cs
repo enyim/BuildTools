@@ -30,6 +30,12 @@ namespace Enyim.Build
 			}
 		}
 
-		protected virtual void OnExecute(ModuleDefinition module) => new ModuleRewriterLogic(GetVisitors()).Execute(module);
+		protected virtual void OnExecute(ModuleDefinition module)
+		{
+			var v = GetVisitors();
+
+			if (v?.Length > 0)
+				new ModuleRewriterLogic(v).Execute(module);
+		}
 	}
 }

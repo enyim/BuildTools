@@ -47,13 +47,14 @@ namespace Enyim.Build.Rewriters.LogTo
 					retval = type.DeclareStaticField(module, module.ImportReference(ILog), "<>log_" + type.Fields.Count, (field) =>
 						new[]
 						{
-							Instruction.Create(OpCodes.Stsfld, field),
 							Instruction.Create(OpCodes.Ldtoken, type),
 							Instruction.Create(OpCodes.Call, getTypeFromHandle),
 							Instruction.Create(OpCodes.Call, LogManager
 																.ImportInto(module).Resolve()
 																.FindMethod("GetLogger", new [] { module.ImportReference(typeof(Type)) })
-																?? throw new InvalidOperationException($"Cannot find GetLogger(Type) on {LogManager}"))
+																?? throw new InvalidOperationException($"Cannot find GetLogger(Type) on {LogManager}")),
+
+							Instruction.Create(OpCodes.Stsfld, field)
 						}, FieldAttributes.Private);
 				}
 
@@ -75,9 +76,7 @@ namespace Enyim.Build.Rewriters.LogTo
 
 			foreach (var m in logTo.Methods)
 			{
-				var matching = FindMatching(m, ilog);
-				if (matching == null)
-					throw new InvalidOperationException($"Cannot find matching method in {ilog} for {m}");
+				var matching = FindMatching(m, ilog) ?? throw new InvalidOperationException($"Cannot find matching method in {ilog} for {m}");
 
 				retval.Add(m.ToString(), module.ImportReference(matching));
 			}

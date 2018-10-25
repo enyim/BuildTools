@@ -1,12 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using McMaster.Extensions.CommandLineUtils;
 
-namespace Runner
+namespace Enyim.Build
 {
-	internal interface ILogger
+	internal static class ListEx
 	{
-		void Info(string message);
-		void Warn(string message);
-		void Error(string message);
+		public static void Add<T>(this List<T> self, IEnumerable<T> init) => self.AddRange(init);
 	}
 }
 

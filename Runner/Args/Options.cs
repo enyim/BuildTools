@@ -1,13 +1,23 @@
 using System;
-using Mono.Cecil;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build
 {
-	internal class GuardMethod
+	internal class Options
 	{
-		public bool IsTemplate;
-		public MethodDefinition Template;
-		public TraceMethod TraceTemplate;
+		public FileInfo Rewriter { get; set; }
+		public FileInfo Source { get; set; }
+		public FileInfo Target { get; set; }
+
+#if CAN_SIGN
+		public bool SignAssembly { get; private set; }
+		public FileInfo KeyFile { get; private set; }
+#endif
+		public DebugSymbolsKind Symbols { get; set; }
+
+		public List<KeyValuePair<string, string>> Properties { get; } = new List<KeyValuePair<string, string>>();
 	}
 }
 

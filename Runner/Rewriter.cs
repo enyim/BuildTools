@@ -34,10 +34,11 @@ namespace Enyim.Build
 			using (var module = Mono.Cecil.ModuleDefinition.ReadModule(options.Source.FullName, new ReaderParameters
 			{
 				InMemory = true,
-				SymbolReaderProvider = reader,
+				//SymbolReaderProvider = reader,
 				ReadSymbols = reader != null,
 				ReadingMode = Mono.Cecil.ReadingMode.Deferred,
-				AssemblyResolver = new BasicAssembyResolver(options.Source.Directory.FullName)
+				//AssemblyResolver = new BasicAssembyResolver(Path.GetDirectoryName(options.Source.Directory.FullName))
+				AssemblyResolver = new NetstandardAssembyResolver()
 			}))
 			{
 				var instance = Resolve(options);
@@ -49,9 +50,11 @@ namespace Enyim.Build
 				{
 					WriteSymbols = writer != null,
 					SymbolWriterProvider = writer,
+#if CAN_SIGN
 					StrongNameKeyPair = options.SignAssembly && options.KeyFile != null
 											? new StrongNameKeyPair(File.ReadAllBytes(options.KeyFile.FullName))
 											: null
+#endif
 				});
 			}
 		}

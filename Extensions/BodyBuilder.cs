@@ -26,13 +26,11 @@ namespace Enyim.Build
 			labels = new HashSet<Instruction>();
 			variables = new Dictionary<string, VariableDefinition>();
 
-			// converts (amongst others) all short jumps into long ones
-			// making sure that when a large amount of code is inserted the
-			// jumps will still be valid
-			body.SimplifyMacros();
-
 			LabelizeJumps();
 			LabelizeExceptionHandlers();
+
+			body.SimplifyMacros();
+			RecalcOffsets();
 		}
 
 		public void Dispose()
@@ -42,10 +40,17 @@ namespace Enyim.Build
 				UnlabelizeJumps();
 				UnlabelizeExceptionHandlers();
 
+				// sequence points are removed based on offset, so we need to fix them
+				RecalcOffsets();
 				body.Instructions.Remove(labels);
 				labels.Clear();
 			}
 
+			body.Optimize();
+		}
+
+		private void RecalcOffsets()
+		{
 			// fix offsets
 			var offset = 0;
 
@@ -54,9 +59,6 @@ namespace Enyim.Build
 				instruction.Offset = offset;
 				offset += instruction.GetSize();
 			}
-
-			// convert long form of operations into short form where possible
-			body.OptimizeMacros();
 		}
 
 		public Instruction DefineLabel()
@@ -84,6 +86,8 @@ namespace Enyim.Build
 			return retval;
 		}
 
+		#region [ Label helpers                ]
+
 		private void UnlabelizeJumps()
 		{
 			// jump (call, branch, switch etc) ops have an Instruction as Operand (the target)
@@ -109,8 +113,6 @@ namespace Enyim.Build
 				}
 			}
 		}
-
-		#region [ Label helpers                ]
 
 		private Instruction GetNextNonLabel(Instruction op)
 		{

@@ -1,13 +1,16 @@
 using System;
-using Mono.Cecil;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using McMaster.Extensions.CommandLineUtils.Abstractions;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build
 {
-	internal class GuardMethod
+	internal class FileInfoValueParser : IValueParser<FileInfo>
 	{
-		public bool IsTemplate;
-		public MethodDefinition Template;
-		public TraceMethod TraceTemplate;
+		public Type TargetType => typeof(FileInfo);
+		public FileInfo Parse(string argName, string value, CultureInfo culture) => new FileInfo(value);
+		object IValueParser.Parse(string argName, string value, CultureInfo culture) => new FileInfo(value);
 	}
 }
 
