@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Target
 {
-	public class LogTests
+	public static class LogTests
 	{
 		private static void Main(string[] args)
 		{
@@ -27,7 +27,7 @@ namespace Target
 	}
 
 	[MapLogTo(ILog = typeof(ILog), LogManager = typeof(LogManager))]
-	internal static class LogTo
+	public static class LogTo
 	{
 		public static void Debug(string a) { }
 		public static void Info(string a, int b) { }
@@ -36,14 +36,14 @@ namespace Target
 	}
 
 	[MapLogTo(ILog = typeof(IHellog), LogManager = typeof(HellogManager))]
-	internal static class HellogTo
+	public static class HellogTo
 	{
 		public static void Debug(string a) { }
 		public static void Info(string a, int b) { }
 		public static void Hello(string a) { }
 	}
 
-	internal interface IHellog
+	public interface IHellog
 	{
 		void Debug(string a);
 		void Info(string a, int b);
@@ -73,7 +73,7 @@ namespace Target
 		public static IHellog GetLogger(Type type) => null;
 	}
 
-	internal static class HellogManager
+	public static class HellogManager
 	{
 		public static IHellog GetLogger(string name) => null;
 		public static IHellog GetLogger(Type type) => null;

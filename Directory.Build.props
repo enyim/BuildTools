@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.2</FileVersion>
+    <InformationalVersion>1.0.0-test</InformationalVersion>
+    <Company>enyim.com</Company>
+    <Copyright>Copyright © enyim.com, Attila Kiskó</Copyright>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\enyim.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <LangVersion>latest</LangVersion>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+</Project>

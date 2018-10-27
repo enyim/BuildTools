@@ -22,7 +22,7 @@ namespace Enyim.Build
 				OnExecute(module);
 				sw.Stop();
 
-				logger.Info($"Done rewriting {module.FileName}, elapsed: {sw.Elapsed}");
+				logger.Info($"Done rewriting; elapsed: {sw.Elapsed}");
 			}
 			catch (Exception e)
 			{

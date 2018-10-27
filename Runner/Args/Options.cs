@@ -7,7 +7,7 @@ namespace Enyim.Build
 {
 	internal class Options
 	{
-		public FileInfo Rewriter { get; set; }
+		public string Rewriter { get; set; }
 		public FileInfo Source { get; set; }
 		public FileInfo Target { get; set; }
 
@@ -15,7 +15,8 @@ namespace Enyim.Build
 		public bool SignAssembly { get; private set; }
 		public FileInfo KeyFile { get; private set; }
 #endif
-		public DebugSymbolsKind Symbols { get; set; }
+		public bool DebugSymbols { get; set; }
+		public DebugType? DebugType { get; set; }
 
 		public List<KeyValuePair<string, string>> Properties { get; } = new List<KeyValuePair<string, string>>();
 	}

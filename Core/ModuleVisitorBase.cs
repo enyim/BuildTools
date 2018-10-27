@@ -10,6 +10,8 @@ namespace Enyim.Build
 	{
 		protected ModuleVisitorBase() { }
 
+		public bool Enabled { get; protected set; } = true;
+
 		public virtual void BeforeModule(ModuleDefinition module) { }
 		public virtual void AfterModule(ModuleDefinition module) { }
 

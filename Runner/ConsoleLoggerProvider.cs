@@ -24,21 +24,13 @@ namespace Enyim.Build
 
 			private readonly ConsoleColor[] Colors = new[] { ConsoleColor.Gray, ConsoleColor.White, ConsoleColor.Yellow, ConsoleColor.Red };
 
-			private void Write(Severity severity, string message, params object[] args) => ColoredWriteLine(Colors[(int)severity], $"{DateTime.Now:hh:mm:ss} [{severity,-5}] {name}" + string.Format(message, args));
-			private void Write(Severity severity, string message) => ColoredWriteLine(Colors[(int)severity], $"{DateTime.Now:hh:mm:ss} [{severity,-5}] {name} {message}");
+			private void Write(Severity severity, string message) => ColoredWriteLine(Colors[(int)severity], $"{DateTime.Now:hh:mm:ss} [{severity.ToString().ToUpperInvariant(),-5}] {name} {message}");
 
 			public void Error(Exception e) => Write(Severity.Error, e.ToString());
 			public void Error(string value) => Write(Severity.Error, value);
-			public void Error(string format, params object[] args) => Write(Severity.Error, format, args);
-
 			public void Info(string value) => Write(Severity.Info, value);
-			public void Info(string format, params object[] args) => Write(Severity.Info, format, args);
-
 			public void Trace(string value) => Write(Severity.Trace, value);
-			public void Trace(string format, params object[] args) => Write(Severity.Trace, format, args);
-
 			public void Warn(string value) => Write(Severity.Warn, value);
-			public void Warn(string format, params object[] args) => Write(Severity.Warn, format, args);
 
 			private static void ColoredWriteLine(ConsoleColor fg, string message)
 			{

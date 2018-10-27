@@ -5,16 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Enyim.Build.Rewriters.LogTo</RootNamespace>
     <AssemblyName>Enyim.Build.Rewriters.LogTo</AssemblyName>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\enyim.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>false</DelaySign>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\GlobalSuppressions.cs">
-      <Link>GlobalSuppressions.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.10.1" />
   </ItemGroup>
@@ -22,4 +13,7 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <OutDir>..\out\plugins\$(MSBuildProjectName)\</OutDir>
+  </PropertyGroup>
 </Project>

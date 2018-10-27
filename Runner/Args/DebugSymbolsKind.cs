@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Enyim.Build
 {
-	public enum DebugSymbolsKind { None = 0, Embedded, Portable };
+	public enum DebugType { None = 0, Embedded, Portable };
 }
 
 #region [ License information          ]

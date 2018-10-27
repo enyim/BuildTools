@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="..\GlobalSuppressions.cs" Condition="Exists('..\GlobalSuppressions.cs')">
+      <Link>Properties\GlobalSuppressions.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

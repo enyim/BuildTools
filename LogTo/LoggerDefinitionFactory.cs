@@ -34,8 +34,6 @@ namespace Enyim.Build.Rewriters.LogTo
 				return false;
 			}
 
-			Debug.Assert(template.Module == module);
-
 			var ilog = mapper.GetPropertyValue<TypeDefinition>("ILog");
 			var logManager = mapper.GetPropertyValue<TypeDefinition>("LogManager");
 

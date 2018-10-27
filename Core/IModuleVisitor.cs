@@ -8,6 +8,8 @@ namespace Enyim.Build
 {
 	public interface IModuleVisitor
 	{
+		bool Enabled { get; }
+
 		void BeforeModule(ModuleDefinition module);
 		void AfterModule(ModuleDefinition module);
 

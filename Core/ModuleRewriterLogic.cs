@@ -17,11 +17,17 @@ namespace Enyim.Build
 
 		public void Execute(ModuleDefinition module)
 		{
-			foreach (var visitor in visitors) visitor.BeforeModule(module);
+			foreach (var visitor in visitors)
+			{
+				if (visitor.Enabled) visitor.BeforeModule(module);
+			}
 
 			DoTypes(module.Types);
 
-			foreach (var visitor in visitors) visitor.AfterModule(module);
+			foreach (var visitor in visitors)
+			{
+				if (visitor.Enabled) visitor.AfterModule(module);
+			}
 		}
 
 		private void DoTypes(Mono.Collections.Generic.Collection<TypeDefinition> types)
@@ -69,8 +75,11 @@ namespace Enyim.Build
 
 				foreach (var visitor in visitors)
 				{
-					@new = action(visitor, @new);
-					if (@new == null) break;
+					if (visitor.Enabled)
+					{
+						@new = action(visitor, @new);
+						if (@new == null) break;
+					}
 				}
 
 				if (@new != old)
@@ -99,8 +108,11 @@ namespace Enyim.Build
 
 				foreach (var visitor in visitors)
 				{
-					@new = action(visitor, @new);
-					if (@new == null) break;
+					if (visitor.Enabled)
+					{
+						@new = action(visitor, @new);
+						if (@new == null) break;
+					}
 				}
 
 				if (@new != old)
@@ -125,7 +137,12 @@ namespace Enyim.Build
 				var current = collection[i];
 
 				foreach (var visitor in visitors)
-					action(visitor, current);
+				{
+					if (visitor.Enabled)
+					{
+						action(visitor, current);
+					}
+				}
 			}
 		}
 	}

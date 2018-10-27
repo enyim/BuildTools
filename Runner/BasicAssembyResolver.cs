@@ -9,39 +9,50 @@ using Mono.Cecil;
 
 namespace Enyim.Build
 {
-	internal class NetstandardAssembyResolver : DefaultAssemblyResolver
+	internal class SourceAssemblyResolver : DefaultAssemblyResolver
 	{
-		private static readonly ILog log = LogManager.GetLogger<NetstandardAssembyResolver>();
+		private static readonly ILog log = LogManager.GetLogger<SourceAssemblyResolver>();
 
-		private readonly ICompilationAssemblyResolver resolver;
-		private readonly DependencyContext ctx;
-
-		public NetstandardAssembyResolver()
+		public SourceAssemblyResolver(string source)
 		{
-			resolver = new CompositeCompilationAssemblyResolver
+			TryCacheDependencies(source);
+		}
+
+		private void TryCacheDependencies(string source)
+		{
+			var deps = Path.ChangeExtension(source, ".deps.json");
+			if (!File.Exists(deps)) return;
+
+			DependencyContext context;
+
+			using (var stream = File.OpenRead(deps))
+			{
+				context = new DependencyContextJsonReader().Read(stream);
+			}
+
+			if (context == null) return;
+
+
+			var resolver = new CompositeCompilationAssemblyResolver
 							(new ICompilationAssemblyResolver[]
 							{
-								new AppBaseCompilationAssemblyResolver(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)),
+								new AppBaseCompilationAssemblyResolver(Path.GetDirectoryName(source)),
 								new ReferenceAssemblyPathResolver(),
 								new PackageCompilationAssemblyResolver()
 							});
-			ctx = DependencyContext.Default;
+
 			var assemblies = new List<string>();
 
-			// load whatever we can from deps.json
-			// a lib can have multiple assets (dlls) so we cannot just do this in Resolve
-			foreach (var lib in ctx.RuntimeLibraries)
+			foreach (var lib in context.RuntimeLibraries)
 			{
-				assemblies.Clear();
-
 				var cl = new CompilationLibrary(lib.Type, lib.Name, lib.Version, lib.Hash,
 												lib.RuntimeAssemblyGroups.SelectMany(g => g.AssetPaths), lib.Dependencies, lib.Serviceable, lib.Path, lib.HashPath);
 
 				resolver.TryResolveAssemblyPaths(cl, assemblies);
 			}
 
-			foreach (var a in assemblies)
-				RegisterAssembly(AssemblyDefinition.ReadAssembly(a));
+			foreach (var a in assemblies.Distinct())
+				RegisterAssembly(AssemblyDefinition.ReadAssembly(a, new ReaderParameters { InMemory = true }));
 		}
 
 		public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)

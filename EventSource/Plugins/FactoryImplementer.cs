@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -15,12 +16,13 @@ namespace Enyim.Build.Rewriters.EventSource
 		private Dictionary<string, ImplementedEventSource> implMap;
 		private string fullNameOfGet;
 		private Dictionary<string, TypeDefinition> rewrittenTypeReferences;
-		private bool enabled;
 
 		public FactoryImplementer(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
 
 		public override void BeforeModule(ModuleDefinition module)
 		{
+			Enabled = false;
+
 			// EventSourceFactory must be an empty class in the target assembly
 			factory = module.IncludeReferencedTypes().Named("EventSourceFactory");
 			if (factory == null) return;
@@ -32,14 +34,17 @@ namespace Enyim.Build.Rewriters.EventSource
 			// get the TEventSource from the Get<TEventSource>() method
 			fullNameOfGet = module.ImportReference(factory).Resolve().FindMethod("Get").ToString();
 			rewrittenTypeReferences = new Dictionary<string, TypeDefinition>();
-			enabled = true;
+
+			Enabled = true;
 		}
 
 		public override TypeDefinition BeforeType(TypeDefinition type) => CilComparer.AreSame(type, factory) ? null : type;
 
 		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
 		{
-			if (enabled && instruction.OpCode == OpCodes.Call)
+			Debug.Assert(Enabled, "Is Enabled");
+
+			if (instruction.OpCode == OpCodes.Call)
 			{
 				var mr = instruction.TargetMethod();
 				if (mr.IsGenericInstance && mr.GetElementMethod().ToString() == fullNameOfGet)
@@ -81,6 +86,11 @@ namespace Enyim.Build.Rewriters.EventSource
 			{
 				foreach (var v in method.Body.Variables)
 				{
+					Debug.Assert(rewrittenTypeReferences !=null, "1");
+					Debug.Assert(v != null, "2");
+					Debug.Assert(v.VariableType != null, "3");
+					Debug.Assert(v.VariableType.FullName != null, "4");
+
 					if (rewrittenTypeReferences.TryGetValue(v.VariableType.FullName, out var target))
 					{
 						v.VariableType = target;

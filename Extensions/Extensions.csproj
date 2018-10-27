@@ -5,16 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Enyim.Build.Rewriters.Extensions</RootNamespace>
     <AssemblyName>Enyim.Build.Rewriters.Extensions</AssemblyName>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\enyim.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>false</DelaySign>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\GlobalSuppressions.cs">
-      <Link>GlobalSuppressions.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ICSharpCode.Decompiler" Version="3.2.0.3856" />
     <PackageReference Include="Mono.Cecil" Version="0.10.1" />

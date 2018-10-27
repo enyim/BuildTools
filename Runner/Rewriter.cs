@@ -15,57 +15,98 @@ namespace Enyim.Build
 
 		public void Rewrite(Options options)
 		{
-			ISymbolReaderProvider reader = null;
-			ISymbolWriterProvider writer = null;
+			var source = options.Source.FullName;
+			var pdbPath = Path.ChangeExtension(source, ".pdb");
+			var pdbExists = File.Exists(pdbPath);
 
-			switch (options.Symbols)
+			var readerParameters = new ReaderParameters
 			{
-				case DebugSymbolsKind.Embedded:
-					reader = new EmbeddedPortablePdbReaderProvider();
-					writer = new EmbeddedPortablePdbWriterProvider();
-					break;
+				AssemblyResolver = new SourceAssemblyResolver(source),
+				InMemory = true
+			};
 
-				case DebugSymbolsKind.Portable:
-					reader = new PortablePdbReaderProvider();
-					writer = new PortablePdbWriterProvider();
-					break;
-			}
-
-			using (var module = Mono.Cecil.ModuleDefinition.ReadModule(options.Source.FullName, new ReaderParameters
+			var writerParameters = new Mono.Cecil.WriterParameters
 			{
-				InMemory = true,
-				//SymbolReaderProvider = reader,
-				ReadSymbols = reader != null,
-				ReadingMode = Mono.Cecil.ReadingMode.Deferred,
-				//AssemblyResolver = new BasicAssembyResolver(Path.GetDirectoryName(options.Source.Directory.FullName))
-				AssemblyResolver = new NetstandardAssembyResolver()
-			}))
-			{
-				var instance = Resolve(options);
-				SetProperties(instance, options.Properties);
-
-				instance.Execute(module);
-
-				module.Write(options.Target.FullName, new Mono.Cecil.WriterParameters
-				{
-					WriteSymbols = writer != null,
-					SymbolWriterProvider = writer,
 #if CAN_SIGN
 					StrongNameKeyPair = options.SignAssembly && options.KeyFile != null
 											? new StrongNameKeyPair(File.ReadAllBytes(options.KeyFile.FullName))
 											: null
 #endif
-				});
+			};
+
+			ApplySymbolProviders(options, readerParameters, writerParameters);
+
+			using (var module = Mono.Cecil.ModuleDefinition.ReadModule(source, readerParameters))
+			{
+				var instance = ResolveRewriterInstance(options.Rewriter);
+				SetProperties(instance, options.Properties);
+
+				instance.Execute(module);
+
+				var target = (options.Target ?? options.Source).FullName;
+				if (writerParameters.SymbolWriterProvider == null)
+				{
+					try { File.Delete(Path.ChangeExtension(target, ".pdb")); }
+					catch { }
+				}
+
+				module.Write(target, writerParameters);
+				log.Info($"Saved module as {target}");
 			}
 		}
 
-		private ModuleRewriterBase Resolve(Options options)
+		private static void ApplySymbolProviders(Options options, ReaderParameters readerParameters, WriterParameters writerParameters)
+		{
+			if (!options.DebugSymbols)
+			{
+				readerParameters.ReadSymbols = false;
+				readerParameters.SymbolReaderProvider = null;
+
+				writerParameters.WriteSymbols = false;
+				writerParameters.SymbolWriterProvider = null;
+
+				return;
+			}
+
+			var source = options.Source.FullName;
+			var pdbPath = Path.ChangeExtension(source, ".pdb");
+			var pdbExists = File.Exists(pdbPath);
+
+			readerParameters.ReadSymbols = true;
+			readerParameters.SymbolReaderProvider = pdbExists
+													? (ISymbolReaderProvider)new Mono.Cecil.Pdb.PdbReaderProvider()
+													: new EmbeddedPortablePdbReaderProvider();
+
+			ISymbolWriterProvider writer = null;
+			switch (options.DebugType)
+			{
+				case null: writer = new Mono.Cecil.Pdb.PdbWriterProvider(); break;
+				case DebugType.Portable: writer = new PortablePdbWriterProvider(); break;
+				case DebugType.Embedded: writer = new EmbeddedPortablePdbWriterProvider(); break;
+			}
+
+			writerParameters.SymbolWriterProvider = writer;
+			writerParameters.WriteSymbols = writer != null;
+		}
+
+		private static Assembly ResolveRewriterAssembly(string name)
+		{
+			var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+			var files = Directory.GetFiles($@"{root}\plugins\{name}", $"*{name}.dll");
+			if (files.Length == 0) throw new FileNotFoundException($"Cannot find plugin {name}");
+			if (files.Length > 1) throw new FileNotFoundException($"Multiple dlls found for {name}; htere should only be one.\n{String.Join("\n", files)}");
+
+			return Assembly.LoadFile(files[0]);
+		}
+
+		private static ModuleRewriterBase ResolveRewriterInstance(string rewriterName)
 		{
 			const string ExpectedTypeName = "ModuleRewriter";
 
-			var assembly = Assembly.LoadFile(options.Rewriter.FullName);
+			var assembly = ResolveRewriterAssembly(rewriterName);
+			var implementation = assembly.ExportedTypes.FirstOrDefault(t => t.Name == ExpectedTypeName)
+									?? throw new InvalidOperationException($"Cannot find {ExpectedTypeName} in {assembly.GetName()}");
 
-			var implementation = assembly.ExportedTypes.FirstOrDefault(t => t.Name == ExpectedTypeName) ?? throw new InvalidOperationException($"Cannot find {ExpectedTypeName} in {assembly.GetName()}");
 			var instance = Activator.CreateInstance(implementation) as ModuleRewriterBase ?? throw new InvalidOperationException($"{implementation.FullName} must inherit from {typeof(ModuleRewriterBase).FullName}");
 
 			return instance;

@@ -15,10 +15,11 @@ namespace Enyim.Build
 #if EASY_DEBUG
 			if (Debugger.IsAttached)
 			{
-				//const string Source = @"D:\Repo\BuildTools\Target\bin\Debug\Target.dll";
-				const string Source = @"D:\Repo\BuildTools\TargetNetstd\bin\Debug\netstandard2.0\TargetNetstd.dll";
+				const string Source = @"D:\Repo\BuildTools\Tests\TargetNetstd\bin\Debug\netstandard2.0\TargetNetstd.dll";
+				//const string Source = @"D:\Repo\BuildTools\Tests\TestReferences\bin\Debug\netstandard2.0\TestReferences.dll ";
+				const string Output = "";//"--output d:\testref.dll";
 
-				args = $@"Enyim.Build.Rewriters.LogTo.dll {Source} --output:lofasz.dll -p A=1 -p:B=2 --property C==3 --symbols:portable".Split(' ');
+				args = $@"LogTo {Source} {Output} --debugsymbols:true --debugtype portable".Split(' ', options: StringSplitOptions.RemoveEmptyEntries);
 			}
 #endif
 
@@ -42,11 +43,10 @@ namespace Enyim.Build
 			app.HelpOption();
 			app.VersionOptionFromAssemblyAttributes(typeof(Program).Assembly);
 
-			var rewriter = app.Argument<FileInfo>(
+			var rewriter = app.Argument(
 								"rewriter",
-								"Path to the rewriter plugin dll")
-								.IsRequired()
-								.Accepts(v => v.ExistingFile());
+								"Name of the rewriter")
+								.IsRequired();
 
 			var source = app.Argument<FileInfo>(
 								"source",
@@ -59,10 +59,14 @@ namespace Enyim.Build
 								"if not specified the source will be overwritten",
 								CommandOptionType.SingleValue);
 
-			var symbols = app.Option<DebugSymbolsKind>(
-								"-s | --symbols <value>",
-								$"If debug symbols should be emitted and in what format. ({String.Join(", ", Enum.GetNames(typeof(DebugSymbolsKind)))})", CommandOptionType.SingleValue)
-								.Accepts(v => v.Enum<DebugSymbolsKind>(true));
+			var debugType = app.Option<DebugType>(
+								"--debugtype <value>",
+								$"Type of debug symbols to be emitted. ({String.Join(", ", Enum.GetNames(typeof(DebugType)))})", CommandOptionType.SingleValue)
+								.Accepts(v => v.Enum<DebugType>(true));
+
+			var debugSymbols = app.Option<bool>(
+								"--debugsymbols <value>",
+								$"If debug symbols should be emitted.", CommandOptionType.SingleValue);
 
 			var props = app.Option(
 								"-p | --property <value>",
@@ -74,10 +78,11 @@ namespace Enyim.Build
 			{
 				var options = new Options
 				{
-					Rewriter = rewriter.ParsedValue,
+					Rewriter = rewriter.Value,
 					Source = source.ParsedValue,
-					Target = target.HasValue() ? target.ParsedValue : source.ParsedValue,
-					Symbols = symbols.ParsedValue,
+					Target = target.HasValue() ? target.ParsedValue : null,
+					DebugType = debugType.HasValue() ? (DebugType?)debugType.ParsedValue : null,
+					DebugSymbols = debugSymbols.HasValue() ? debugSymbols.ParsedValue : false,
 					Properties =
 					{
 						from value in props.Values

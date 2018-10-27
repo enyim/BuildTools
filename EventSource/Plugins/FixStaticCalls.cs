@@ -18,27 +18,26 @@ namespace Enyim.Build.Rewriters.EventSource
 		private Dictionary<string, MethodReference> isEnabledMap;
 		private Lazy<CallCollector> callCollector;
 
-		private bool enabled;
-
 		public FixStaticCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations) { }
 
 		public override void BeforeModule(ModuleDefinition module)
 		{
 			var staticTracers = Implementations.OfType<StaticBasedEventSource>().ToArray();
-			if (staticTracers.Length == 0) return;
+			if (staticTracers.Length == 0)
+			{
+				Enabled = false;
+				return;
+			}
 
 			logMap = staticTracers.SelectMany(l => l.Methods).ToDictionary(m => m.Old.FullName, m => m.New);
 			instanceMap = staticTracers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => (FieldDefinition)eventSource.Meta["Instance"]);
 			isEnabledMap = staticTracers.ToDictionary(eventSource => eventSource.Old.FullName, eventSource => module.ImportReference(eventSource.New.FindMethod("IsEnabled")));
 
 			callCollector = new Lazy<CallCollector>(() => new CallCollector(module));
-			enabled = true;
 		}
 
 		public override MethodDefinition BeforeMethod(MethodDefinition method)
 		{
-			if (!enabled) return method;
-
 			var calls = callCollector.Value.Collect(method, r => instanceMap.ContainsKey(r.TargetMethod().DeclaringType.FullName));
 			if (calls.Length == 0) return method;
 
