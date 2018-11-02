@@ -18,9 +18,15 @@ namespace Enyim.Build.Rewriters.LogTo
 
 		public LoggerDefinition(ModuleDefinition module, TypeDefinition logTo, TypeDefinition ilog, TypeDefinition logManager)
 		{
-			LogTo = logTo;
-			ILog = ilog;
-			LogManager = logManager;
+			LogTo = logTo ?? throw new ArgumentNullException(nameof(logTo));
+			ILog = ilog ?? throw new ArgumentNullException(nameof(ilog));
+			LogManager = logManager ?? throw new ArgumentNullException(nameof(logManager));
+
+			var getLogger = logManager.FindMethod("GetLogger", new[] { module.ImportReference(typeof(Type)) })
+							?? throw new InvalidOperationException($"Cannot find GetLogger(Type) on {logManager}");
+
+			if (getLogger.ReturnType.FullName != ilog.FullName)
+				throw new InvalidOperationException($"{getLogger} must return {ilog}");
 
 			ilogMap = GetILogMap(module, logTo, ilog);
 			guardProperties = GetGuardProperties(module, ilog);

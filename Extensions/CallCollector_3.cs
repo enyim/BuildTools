@@ -15,11 +15,13 @@ namespace Enyim.Build
 
 		private readonly DecompilerTypeSystem typeSystem;
 		private readonly ILReader ilReader;
+		private readonly CSharpDecompiler decompiler;
 
 		public CallCollector(Mono.Cecil.ModuleDefinition module)
 		{
 			typeSystem = new DecompilerTypeSystem(module);
 			ilReader = new ILReader(typeSystem);
+			decompiler = new CSharpDecompiler(typeSystem, new ICSharpCode.Decompiler.DecompilerSettings());
 		}
 
 		public CallInfo[] Collect(Mono.Cecil.MethodDefinition method, Func<Instruction, bool> filter = null)
@@ -27,16 +29,29 @@ namespace Enyim.Build
 			if (!method.HasBody) return new CallInfo[0];
 
 			var body = method.Body;
-			if (method.Body.Instructions.Any(i => (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt) && filter(i)))
+			if (method.Body.Instructions.Any(i => i.OpCode.FlowControl == FlowControl.Call && filter(i)))
 			{
 				var function = ilReader.ReadIL(body);
-				var transformContext = new ILTransformContext(function, typeSystem);
-				var opsByOffset = body.Instructions.ToDictionary(instr => instr.Offset);
 
+				var transformContext = decompiler.CreateILTransformContext(function);
 				foreach (var t in ILTransforms)
 					t.Run(function, transformContext);
 
-				var collector = new BlockVisitor(i => filter(opsByOffset[i.ILRange.Start]));
+				var opsByOffset = body.Instructions.ToDictionary(instr => instr.Offset);
+
+				var collector = new BlockVisitor(i =>
+				{
+					var range = i.ILRange;
+					var op = opsByOffset[range.Start];
+					while (op.OpCode.FlowControl != FlowControl.Call)
+					{
+						op = op.Next;
+						if (op.Offset > range.End) return false;
+					}
+
+					return filter(op);
+				});
+
 				function.AcceptVisitor(collector);
 
 				if (collector.CallStarts.Count > 0)

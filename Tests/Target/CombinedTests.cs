@@ -10,27 +10,17 @@ namespace Target
 	{
 		public string currentWriteCopier;
 
-		public bool AAA()
+		public bool LogAndEVentSource()
 		{
-			// check if we have an op in progress
-			if (currentWriteCopier == null) return false;
-			if (currentWriteCopier.IndexOf("lofasz") > -1) return true;
-
-			// last chunk was sent
 			LogTo.Debug("Sent & finished " + currentWriteCopier.Length);
-
-			// op is sent fully; response can be expected
 			var a = DateTime.Now;
 			Console.WriteLine(a.Add(TimeSpan.FromDays(12)));
 			StaticEventSource.ConnectStop(currentWriteCopier);
 
-			// clean up
-			currentWriteCopier = null;
-
 			return false;
 		}
 
-		public void TryCatch()
+		public void LogFromTryCatch()
 		{
 			try
 			{
@@ -45,6 +35,7 @@ namespace Target
 			try
 			{
 				LogTo.Info("a", 2);
+				throw new NotSupportedException("generic catch");
 			}
 			catch (InvalidCastException e1) { LogTo.Warn(e1); }
 			catch (Exception e2) { LogTo.Error(e2); }
@@ -56,6 +47,8 @@ namespace Target
 				LogTo.Debug("6");
 				HellogTo.Debug("1");
 				HellogTo.Debug("2");
+
+				throw new InvalidCastException("no cast");
 			}
 			catch (InvalidCastException e1) { LogTo.Warn(e1); }
 			catch (Exception e2)
@@ -65,7 +58,7 @@ namespace Target
 			}
 		}
 
-		public async Task Lofasz()
+		public async Task AsyncLogWithError()
 		{
 			await Task.Delay(1);
 
@@ -74,6 +67,7 @@ namespace Target
 			try
 			{
 				await Task.Delay(1);
+				throw new InvalidOperationException("after delay");
 			}
 			catch (Exception e)
 			{

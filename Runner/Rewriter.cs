@@ -21,8 +21,9 @@ namespace Enyim.Build
 
 			var readerParameters = new ReaderParameters
 			{
-				AssemblyResolver = new SourceAssemblyResolver(source),
-				InMemory = true
+				AssemblyResolver = new AssemblyReferenceResolver(source, options.References),
+				InMemory = true,
+				ReadingMode = ReadingMode.Immediate
 			};
 
 			var writerParameters = new Mono.Cecil.WriterParameters
@@ -49,6 +50,8 @@ namespace Enyim.Build
 					try { File.Delete(Path.ChangeExtension(target, ".pdb")); }
 					catch { }
 				}
+
+				module.Assembly.AddAttr<AssemblyMetadataAttribute>(module, "Rewriter", DateTime.Now.ToString());
 
 				module.Write(target, writerParameters);
 				log.Info($"Saved module as {target}");

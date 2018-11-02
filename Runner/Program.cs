@@ -1,4 +1,4 @@
-#define EASY_DEBUG_OFF
+#define EASY_DEBUG
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,11 +15,14 @@ namespace Enyim.Build
 #if EASY_DEBUG
 			if (Debugger.IsAttached)
 			{
-				const string Source = @"D:\Repo\BuildTools\Tests\TargetNetstd\bin\Debug\netstandard2.0\TargetNetstd.dll";
-				//const string Source = @"D:\Repo\BuildTools\Tests\TestReferences\bin\Debug\netstandard2.0\TestReferences.dll ";
-				const string Output = "";//"--output d:\testref.dll";
+				//const string Source = @"D:\Repo\BuildTools\Tests\TargetNetstd\bin\Debug\netstandard2.0\TargetNetstd.dll";
+				//const string Source = @"D:\Repo\BuildTools\Tests\TestReferences\bin\Debug\netstandard2.0\TestReferences.dll";
+				//const string Source = @"D:\Repo\BuildTools\Tests\TestReferences\obj\Debug\netstandard2.0\TestReferences.dll";
+				const string Source = @"D:\Repo\enyimmemcached2\Memcached\bin\debug\netstandard2.0\Enyim.Caching.Memcached2.dll";
 
-				args = $@"LogTo {Source} {Output} --debugsymbols:true --debugtype portable".Split(' ', options: StringSplitOptions.RemoveEmptyEntries);
+				const string Output = "--output d:\\lofasz.dll";
+
+				args = $@"EventSource {Source} {Output} --debugsymbols:true --debugtype portable".Split(' ', options: StringSplitOptions.RemoveEmptyEntries);
 			}
 #endif
 
@@ -74,6 +77,11 @@ namespace Enyim.Build
 								CommandOptionType.MultipleValue)
 								.Accepts(v => v.RegularExpression("^([^=]+)=(.+)"));
 
+			var refs = app.Option(
+					"-r | --references <value>",
+					"List of extra reference assemblies separated by semicolon.",
+					CommandOptionType.SingleValue);
+
 			app.OnExecute(() =>
 			{
 				var options = new Options
@@ -83,6 +91,7 @@ namespace Enyim.Build
 					Target = target.HasValue() ? target.ParsedValue : null,
 					DebugType = debugType.HasValue() ? (DebugType?)debugType.ParsedValue : null,
 					DebugSymbols = debugSymbols.HasValue() ? debugSymbols.ParsedValue : false,
+					References = { (refs.Value() ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries) },
 					Properties =
 					{
 						from value in props.Values

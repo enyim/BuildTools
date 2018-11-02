@@ -17,7 +17,7 @@ namespace Enyim.Build
 #endif
 		public bool DebugSymbols { get; set; }
 		public DebugType? DebugType { get; set; }
-
+		public List<string> References { get; } = new List<string>();
 		public List<KeyValuePair<string, string>> Properties { get; } = new List<KeyValuePair<string, string>>();
 	}
 }

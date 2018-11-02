@@ -8,13 +8,14 @@ namespace Target
 {
 	public static class LogTests
 	{
-		private static void Main(string[] args)
+		public static void Test(string[] args)
 		{
 			LogTo.Debug("1");
 
 			LogTo.Info("1", 2);
 
 			LogTo.Debug("1");
+
 			LogTo.Debug("1");
 		}
 	}
@@ -69,14 +70,78 @@ namespace Target
 
 	internal static class LogManager
 	{
-		public static IHellog GetLogger(string name) => null;
-		public static IHellog GetLogger(Type type) => null;
+		public static ILog GetLogger(string name) => new ConsoleLogger(name);
+		public static ILog GetLogger(Type type) => new ConsoleLogger(type.FullName);
+
+		class ConsoleLogger : ILog
+		{
+			private readonly string name;
+
+			public ConsoleLogger(string name)
+			{
+				this.name = name;
+			}
+
+			public bool IsDebugEnabled => true;
+			public bool IsInfoEnabled => true;
+			public bool IsErrorEnabled => true;
+			public bool IsWarnEnabled => true;
+
+			public void Debug(string a)
+			{
+				Console.WriteLine($"DEBUG {name} -- {a}");
+			}
+
+			public void Error(Exception e)
+			{
+				Console.WriteLine($"ERROR {name} -- {e}");
+			}
+
+			public void Info(string a, int b)
+			{
+				Console.WriteLine($"INFO {name} -- {a} {b}");
+			}
+
+			public void Warn(Exception e)
+			{
+				Console.WriteLine($"WARN {name} -- {e}");
+			}
+		}
 	}
 
 	public static class HellogManager
 	{
-		public static IHellog GetLogger(string name) => null;
-		public static IHellog GetLogger(Type type) => null;
+		public static IHellog GetLogger(string name) => new ConsoleLogger(name);
+		public static IHellog GetLogger(Type type) => new ConsoleLogger(type.FullName);
+
+		class ConsoleLogger : IHellog
+		{
+			private readonly string name;
+
+			public ConsoleLogger(string name)
+			{
+				this.name = name;
+			}
+
+			public bool IsDebugEnabled => true;
+			public bool IsInfoEnabled => true;
+			public bool IsHelloEnabled => true;
+
+			public void Debug(string a)
+			{
+				Console.WriteLine($"DEBUG {name} -- {a}");
+			}
+
+			public void Hello(string a)
+			{
+				Console.WriteLine($"HELLO {name} -- {a}");
+			}
+
+			public void Info(string a, int b)
+			{
+				Console.WriteLine($"INFO {name} -- {a} {b}");
+			}
+		}
 	}
 }
 

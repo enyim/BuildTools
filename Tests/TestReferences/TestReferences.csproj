@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <ShouldRewrite>true</ShouldRewrite>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Tests\TargetNetstd\TargetNetstd.csproj" />
   </ItemGroup>
-  
+
 </Project>

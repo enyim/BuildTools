@@ -21,6 +21,8 @@ namespace Enyim.Build.Rewriters.LogTo
 
 		public override MethodDefinition BeforeMethod(MethodDefinition method)
 		{
+			if (!method.HasBody) return method;
+
 			var calls = callCollector.Collect(method, logDefinitionFactory.IsLogger);
 			if (calls.Length == 0) return method;
 

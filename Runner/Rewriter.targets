@@ -1,0 +1,37 @@
+<Project>
+
+  <ItemGroup>
+    <_DefaultRewriters Include="LogTo;EventSource" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ShouldRewrite Condition=" '$(ShouldRewrite)' == '' ">True</ShouldRewrite>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(DesignTimeBuild) == true OR $(BuildingProject) != true">
+    <_SkipRewriting>True</_SkipRewriting>
+  </PropertyGroup>
+
+  <Target Name="DoRewrite"
+          Condition=" '$(ShouldRewrite)' == 'True' And Exists('@(IntermediateAssembly)') And ('$(DesignTimeBuild)' != 'True' OR '$(BuildingProject)' == 'True') "
+          AfterTargets="AfterCompile"
+          Inputs="@(IntermediateAssembly->'%(FullPath)')"
+          Outputs="$(TargetPath)"
+  >
+    <ItemGroup>
+      <_Rewriters Remove="@(_Rewriters)" />
+      <_Rewriters Include="@(Rewriters)" />
+      <_Rewriters Include="@(_DefaultRewriters)" Condition=" '@(Rewriters)' == '' " />
+      <_FilteredRewriters Include="@(_Rewriters)" Condition="'%(_Rewriters.Enabled)' == '' Or %(_Rewriters.Enabled)" />
+    </ItemGroup>
+
+    <Message Text="No rewriters have been defined." Importance="low" Condition=" '@(_FilteredRewriters)' == '' "/>
+    <Exec
+      CustomErrorRegularExpression="\[ERROR"
+      CustomWarningRegularExpression="\[WARN"
+      WorkingDirectory="$(MSBuildThisFileDirectory)"
+      UseCommandProcessor="False"
+      Command="dotnet $(MSBuildThisFileDirectory)\Enyim.Build.Rewriters.Runner.dll %(_FilteredRewriters.Identity) @(IntermediateAssembly->'%(FullPath)') --debugtype $(DebugType) --debugsymbols $(DebugSymbols) -r &quot;@(ReferencePath)&quot;" />
+  </Target>
+
+</Project>

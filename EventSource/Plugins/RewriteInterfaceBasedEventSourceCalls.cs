@@ -6,11 +6,11 @@ using Mono.Cecil.Cil;
 
 namespace Enyim.Build.Rewriters.EventSource
 {
-	internal class RewriteEventSourceCalls : EventSourceRewriter
+	internal class RewriteInterfaceBasedEventSourceCalls : EventSourceRewriter
 	{
 		private readonly Dictionary<string, MethodDefinition> implMap;
 
-		public RewriteEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		public RewriteInterfaceBasedEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
 		{
 			implMap = implementations
 						.OfType<InterfaceBasedEventSource>()
@@ -20,7 +20,7 @@ namespace Enyim.Build.Rewriters.EventSource
 
 		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
 		{
-			if (instruction.Is(OpCodes.Callvirt, OpCodes.Call))
+			if (instruction.OpCode.FlowControl == FlowControl.Call)
 			{
 				var callSite = instruction.TargetMethod();
 

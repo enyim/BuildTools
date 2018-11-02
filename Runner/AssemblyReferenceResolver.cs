@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,29 +10,51 @@ using Mono.Cecil;
 
 namespace Enyim.Build
 {
-	internal class SourceAssemblyResolver : DefaultAssemblyResolver
+	internal class AssemblyReferenceResolver : DefaultAssemblyResolver
 	{
-		private static readonly ILog log = LogManager.GetLogger<SourceAssemblyResolver>();
+		private static readonly ILog log = LogManager.GetLogger<AssemblyReferenceResolver>();
 
-		public SourceAssemblyResolver(string source)
+		public AssemblyReferenceResolver(string source, IEnumerable<string> extraRefs)
 		{
-			TryCacheDependencies(source);
+			TryCacheDependencies(source, extraRefs);
 		}
 
-		private void TryCacheDependencies(string source)
+		private void TryCacheDependencies(string source, IEnumerable<string> extraRefs)
 		{
+			var sw = Stopwatch.StartNew();
+			var deps = TryLoadDeps(source).Concat(extraRefs).Distinct();
+
+			foreach (var a in deps)
+			{
+				try
+				{
+					RegisterAssembly(AssemblyDefinition.ReadAssembly(a, new ReaderParameters { ReadingMode = ReadingMode.Deferred }));
+				}
+				catch { }
+			}
+
+			sw.Stop();
+			log.Trace($"Initialized the assembly cache in {sw.Elapsed}");
+		}
+
+		private static IEnumerable<string> TryLoadDeps(string source)
+		{
+			source = Path.GetFullPath(source);
 			var deps = Path.ChangeExtension(source, ".deps.json");
-			if (!File.Exists(deps)) return;
+
+			if (!File.Exists(deps))
+			{
+				log.Trace($"Assembly {source} does not have a deps file");
+				return Enumerable.Empty<string>();
+			}
 
 			DependencyContext context;
-
 			using (var stream = File.OpenRead(deps))
 			{
 				context = new DependencyContextJsonReader().Read(stream);
 			}
 
-			if (context == null) return;
-
+			if (context == null) return Enumerable.Empty<string>();
 
 			var resolver = new CompositeCompilationAssemblyResolver
 							(new ICompilationAssemblyResolver[]
@@ -51,8 +74,11 @@ namespace Enyim.Build
 				resolver.TryResolveAssemblyPaths(cl, assemblies);
 			}
 
-			foreach (var a in assemblies.Distinct())
-				RegisterAssembly(AssemblyDefinition.ReadAssembly(a, new ReaderParameters { InMemory = true }));
+			var index = assemblies.FindIndex(v => source.Equals(v, StringComparison.OrdinalIgnoreCase));
+			if (index > -1)
+				assemblies.RemoveAt(index);
+
+			return assemblies;
 		}
 
 		public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)

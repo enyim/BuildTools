@@ -1,7 +1,7 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -9,6 +9,8 @@ namespace Enyim.Build.Rewriters.LogTo
 {
 	internal class LoggerDefinitionFactory
 	{
+		private static ILog log = LogManager.GetLogger<LoggerDefinitionFactory>();
+
 		private readonly ModuleDefinition module;
 		private readonly HashSet<TypeDefinition> notALogger;
 		private readonly Dictionary<TypeDefinition, LoggerDefinition> isALogger;
@@ -34,8 +36,8 @@ namespace Enyim.Build.Rewriters.LogTo
 				return false;
 			}
 
-			var ilog = mapper.GetPropertyValue<TypeDefinition>("ILog");
-			var logManager = mapper.GetPropertyValue<TypeDefinition>("LogManager");
+			var ilog = mapper.GetPropertyValue<TypeDefinition>("ILog") ?? throw new InvalidOperationException($"ILog cannot be resolved for {template}");
+			var logManager = mapper.GetPropertyValue<TypeDefinition>("LogManager") ?? throw new InvalidOperationException($"LogManager cannot be resolved for {template}"); ;
 
 			info = new LoggerDefinition(module, template, ilog, logManager);
 			isALogger.Add(template, info);
@@ -43,8 +45,41 @@ namespace Enyim.Build.Rewriters.LogTo
 			return true;
 		}
 
-		public bool IsLogger(Instruction i) => (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt)
-												&& TryGet(i.TargetMethod().DeclaringType.Resolve(), out _);
+		public bool IsLogger(Instruction i)
+		{
+			if (i.OpCode.FlowControl != FlowControl.Call) return false;
+
+			Debug.Assert(i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt);
+
+			var method = i.TargetMethod();
+			Debug.Assert(method != null);
+
+			if (method == null)
+			{
+				log.Warn($"Instruction {i} has no method!");
+				return false;
+			}
+
+			var type = method.DeclaringType;
+			Debug.Assert(type != null);
+
+			if (type == null)
+			{
+				log.Warn($"Method {method} has no declaring type!");
+				return false;
+			}
+
+			var resolved = type.Resolve();
+			Debug.Assert(resolved != null);
+
+			if (resolved == null)
+			{
+				log.Warn($"Type {type} cannot be resolved!");
+				return false;
+			}
+
+			return TryGet(resolved, out _);
+		}
 	}
 }
 

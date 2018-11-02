@@ -27,7 +27,7 @@ namespace Enyim.Build.Rewriters.EventSource
 			return retval;
 		}
 
-	protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new StaticTemplate(template, TypeDefs);
+		protected override EventSourceTemplate CreateEventSourceTemplate(TypeDefinition template) => new StaticTemplate(template, TypeDefs);
 		protected override string GetTargetTypeName(TypeDefinition template) => template.Name;
 		protected override TypeReference GetChildTemplate(TypeDefinition template, string nestedName) => template.NestedTypes.Named(nestedName);
 

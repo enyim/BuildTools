@@ -31,7 +31,7 @@ namespace Enyim.Build.Rewriters.EventSource
 				new CreateInstanceFieldsForStaticTemplates(implemented),
 
 				new FixStaticCalls(implemented),
-				new RewriteEventSourceCalls(implemented),
+				new RewriteInterfaceBasedEventSourceCalls(implemented),
 
 				new RewriteProps(implemented),
 				new RewriteFields(implemented),
