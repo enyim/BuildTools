@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="CleanPublish" AfterTargets="AfterClean">
+    <RemoveDir Directories="$(PublishDir)" Condition=" Exists('$(PublishDir)') " />
+  </Target>
+</Project>

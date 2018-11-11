@@ -1,7 +1,6 @@
 <Project>
-  <ItemGroup>
-    <Compile Include="..\GlobalSuppressions.cs" Condition="Exists('..\GlobalSuppressions.cs')">
-      <Link>Properties\GlobalSuppressions.cs</Link>
-    </Compile>
-  </ItemGroup>
+  <Import Project="build\GlobalSuppressions.targets" />
+  <Import Project="build\Clean.targets" />
+  <Import Project="build\Nuget.targets" />
+  <Import Project="build\Rewriters.Build.targets" />
 </Project>

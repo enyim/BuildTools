@@ -1,37 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build.Rewriters.LogTo
 {
-	internal class RewriteInterfaceBasedEventSourceCalls : EventSourceRewriter
+	internal static class EnumerableExtensions
 	{
-		private readonly Dictionary<string, MethodDefinition> implMap;
-
-		public RewriteInterfaceBasedEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		public static IEnumerable<IEnumerable<T>> SplitToSequences<T>(this IEnumerable<T> source, ISequenceComparer<T> comparer)
 		{
-			implMap = implementations
-						.OfType<InterfaceBasedEventSource>()
-						.SelectMany(ies => ies.Methods)
-						.ToDictionary(m => m.Old.ToString(), m => m.New);
-		}
+			var retval = new List<List<T>>();
+			List<T> currentSequence = null;
 
-		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
-		{
-			if (instruction.Is(OpCodes.Call, OpCodes.Callvirt))
+			foreach (var item in source)
 			{
-				var callSite = instruction.TargetMethod();
-
-				if (implMap.TryGetValue(callSite.ToString(), out var newMethod))
+				if (currentSequence != null && comparer.IsConsecutive(currentSequence.Last(), item))
 				{
-					instruction.OpCode = OpCodes.Callvirt;
-					instruction.Operand = newMethod;
+					currentSequence.Add(item);
+					continue;
 				}
+
+				currentSequence = new List<T> { item };
+				retval.Add(currentSequence);
 			}
 
-			return instruction;
+			return retval;
 		}
 	}
 }

@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <PackageOutputPath Condition=" '$(PackageOutputPath)' == '' ">$(MSBuildThisFileDirectory)..\packages</PackageOutputPath>
+
+    <Authors>Attila Kiskó</Authors>
+    <Company>enyim.com</Company>
+    <Copyright>Copyright © enyim.com, Attila Kiskó</Copyright>
+
+    <PackageId>$(AssemblyName)</PackageId>
+    <Product>$(AssemblyName)</Product>
+    <Description>(none)</Description>
+    <PackageLicenseUrl>http://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
+
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>http://github.com/enyim/BuildTools</PackageProjectUrl>
+    <RepositoryUrl>http://github.com/enyim/BuildTools</RepositoryUrl>
+    <PackageIconUrl>http://enyim.com/logo.png</PackageIconUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags />
+
+    <NuspecFile>$(MSBuildThisFileDirectory)Common.nuspec</NuspecFile>
+  </PropertyGroup>
+</Project>

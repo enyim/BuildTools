@@ -18,7 +18,30 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Rewriters Include="LogTo" />
+    <PackageReference Include="Enyim.Build.Rewriters.EventSource" Version="1.1.2-local">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Enyim.Build.Rewriters.LogTo" Version="1.1.2-local">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
+  <Target BeforeTargets="Build" Name="Dump">
+    <ItemGroup>
+
+      <_KnownRewriters Include="@(PackageReference)" Condition="$([System.String]::new('%(Identity)').Contains('Rewriter'))" />
+      <_NuGetPackageFolders Include="$(NuGetPackageFolders)" />
+
+      <_MergeRewritersToNuget Include="@(_KnownRewriters)">
+        <Nuget>$([System.String]::new('%(_NuGetPackageFolders.Identity)').TrimEnd('\'))</Nuget>
+      </_MergeRewritersToNuget>
+
+      <_AllRewriterPaths Include="@(_MergeRewritersToNuget->'%(Nuget)\%(Identity)\%(Version)\tools\%(Identity).dll')" />
+      <_ResolvedRewriterPaths Include="@(_AllRewriterPaths)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+
+    <Message Text="@(_ResolvedRewriterPaths)" Importance="high" />
+  </Target>
 </Project>

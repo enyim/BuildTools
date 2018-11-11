@@ -47,7 +47,7 @@ namespace Enyim.Build.Rewriters.LogTo
 
 		public bool IsLogger(Instruction i)
 		{
-			if (i.OpCode.FlowControl != FlowControl.Call) return false;
+			if (!i.Is(OpCodes.Call, OpCodes.Callvirt)) return false;
 
 			Debug.Assert(i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt);
 

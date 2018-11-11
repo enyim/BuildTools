@@ -1,37 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using McMaster.Extensions.CommandLineUtils;
+using McMaster.Extensions.CommandLineUtils.Validation;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build
 {
-	internal class RewriteInterfaceBasedEventSourceCalls : EventSourceRewriter
+	internal static class CommandArgumentEx
 	{
-		private readonly Dictionary<string, MethodDefinition> implMap;
-
-		public RewriteInterfaceBasedEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		public static CommandArgument<T> IsRequired<T>(this CommandArgument<T> argument, bool allowEmptyStrings = false, string errorMessage = null)
 		{
-			implMap = implementations
-						.OfType<InterfaceBasedEventSource>()
-						.SelectMany(ies => ies.Methods)
-						.ToDictionary(m => m.Old.ToString(), m => m.New);
+			return (CommandArgument<T>)ValidationExtensions.IsRequired(argument, allowEmptyStrings, errorMessage);
 		}
 
-		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
+		public static CommandOption<T> IsRequired<T>(this CommandOption<T> argument, bool allowEmptyStrings = false, string errorMessage = null)
 		{
-			if (instruction.Is(OpCodes.Call, OpCodes.Callvirt))
-			{
-				var callSite = instruction.TargetMethod();
-
-				if (implMap.TryGetValue(callSite.ToString(), out var newMethod))
-				{
-					instruction.OpCode = OpCodes.Callvirt;
-					instruction.Operand = newMethod;
-				}
-			}
-
-			return instruction;
+			return (CommandOption<T>)ValidationExtensions.IsRequired(argument, allowEmptyStrings, errorMessage);
 		}
 	}
 }

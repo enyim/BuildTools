@@ -1,19 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>Enyim.Build.Rewriters.LogTo</RootNamespace>
     <AssemblyName>Enyim.Build.Rewriters.LogTo</AssemblyName>
+    <IsTool>True</IsTool>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\libs\Runner\Runner.targets" Link="Runner.targets" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.10.1" />
+    <PackageReference Include="ICSharpCode.Decompiler" Version="3.2.0.3856" />
+    <PackageReference Include="RoslynCodeTaskFactory" Version="2.0.7" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Extensions\Extensions.csproj" />
+    <ProjectReference Include="..\libs\Core\Core.csproj" />
+    <ProjectReference Include="..\libs\Extensions\Extensions.csproj" />
+    <ProjectReference Include="..\libs\Runner\Runner.csproj" />
   </ItemGroup>
-  <PropertyGroup>
-    <OutDir>..\out\plugins\$(MSBuildProjectName)\</OutDir>
-  </PropertyGroup>
+  <ItemGroup>
+    <None Update="Enyim.Build.Rewriters.LogTo.targets">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

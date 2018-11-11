@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <InformationalVersion Condition=" '$(InformationalVersion)' == '' ">$(Version)</InformationalVersion>
+  </PropertyGroup>
+  <Target Name="SetPackageDependencies" BeforeTargets="GenerateNuspec" Inputs="$(NuspecFile);@(NuGetPackInput)" Outputs="@(NuGetPackOutput)">
+    <PropertyGroup>
+      <_FullPublish>$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(PublishDir)))</_FullPublish>
+      <NuspecProperties>
+        configuration=$(Configuration);
+        id=$(PackageId);
+        authors=$(Authors);
+        company=$(Company);
+        copyright=$(Copyright);
+        product=$(Product);
+        description=$(Description);
+        packageLicenseUrl=$(PackageLicenseUrl);
+        projectUrl=$(PackageProjectUrl);
+        repositoryUrl=$(RepositoryUrl);
+        iconUrl=$(PackageIconUrl);
+        repositoryType=$(RepositoryType);
+        licenseUrl=$(PackageLicenseUrl);
+        version=$(PackageVersion);
+        tags=$(PackageTags);
+        publishDir=$(_FullPublish.TrimEnd('\'));
+        projectDir=$(MSBuildProjectDirectory.TrimEnd('\'));
+      </NuspecProperties>
+    </PropertyGroup>
+  </Target>
+</Project>

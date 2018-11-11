@@ -20,7 +20,24 @@ namespace Target
 			return false;
 		}
 
-		public void LogFromTryCatch()
+		public void SimpleLogFromTryCatch()
+		{
+			try
+			{
+				Console.WriteLine(1);
+			}
+			catch (InvalidCastException e1)
+			{
+				LogTo.Warn(e1);
+			}
+			catch (Exception e2)
+			{
+				Console.WriteLine(2);
+				LogTo.Error(e2);
+			}
+		}
+
+		public void ComplexLogFromTryCatch()
 		{
 			try
 			{

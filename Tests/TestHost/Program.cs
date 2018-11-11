@@ -8,7 +8,7 @@ namespace TestHost
 		static void Main(string[] args)
 		{
 			LogTests.Test(args);
-			new CombinedTests().LogFromTryCatch();
+			new CombinedTests().ComplexLogFromTryCatch();
 			new CombinedTests().AsyncLogWithError().Wait();
 		}
 	}

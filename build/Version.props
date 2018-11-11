@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <VersionPrefix Condition=" '$(VersionPrefix)' == '' ">1.2.3</VersionPrefix>
+    <VersionSuffix Condition=" '$(VersionSuffix)' == '' ">local</VersionSuffix>
+    <AssemblyVersion Condition=" '$(AssemblyVersion)' == '' ">$(VersionPrefix)</AssemblyVersion>
+    <FileVersion Condition=" '$(FileVersion)' == '' ">$(AssemblyVersion)</FileVersion>
+  </PropertyGroup>
+</Project>

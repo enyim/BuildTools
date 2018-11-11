@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>$id$</id>
+		<version>$version$</version>
+		<authors>$authors$</authors>
+		<owners>$authors$</owners>
+		<licenseUrl>$licenseUrl$</licenseUrl>
+		<projectUrl>$projectUrl$</projectUrl>
+		<iconUrl>$iconUrl$</iconUrl>
+		<description>$description$</description>
+		<copyright>$copyright$</copyright>
+		<tags>$tags$</tags>
+
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<developmentDependency>true</developmentDependency>
+	</metadata>
+
+	<files>
+		<file src="$publishDir$\**" target="tools" exclude="**\*.targets;**\*.props"/>
+		<!--<file src="$publishDir$\Runner.targets" target="build\$id$.targets" />
+		<file src="$publishDir$\Runner.props" target="build\$id$.props" />-->
+
+		<file src="$publishDir$\*.targets" target="build" />
+		<file src="$publishDir$\*.props" target="build" />
+	</files>
+</package>

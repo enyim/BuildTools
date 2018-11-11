@@ -1,0 +1,17 @@
+<Project>
+
+  <Target Name="DoRewrite_$id$"
+          Condition=" Exists('@(IntermediateAssembly)') And ('$(DesignTimeBuild)' != 'True' OR '$(BuildingProject)' == 'True') "
+          AfterTargets="AfterCompile"
+          Inputs="@(IntermediateAssembly->'%(FullPath)')"
+          Outputs="$(TargetPath)"
+  >
+    <Exec
+      CustomErrorRegularExpression="\[ERROR"
+      CustomWarningRegularExpression="\[WARN"
+      WorkingDirectory="$(MSBuildThisFileDirectory)\..\tools"
+      UseCommandProcessor="False"
+      Command="dotnet $(MSBuildThisFileDirectory)\..\tools\$(MSBuildThisFileName).dll @(IntermediateAssembly->'%(FullPath)') --debugtype $(DebugType) --debugsymbols $(DebugSymbols) -r &quot;@(ReferencePath)&quot;" />
+  </Target>
+
+</Project>

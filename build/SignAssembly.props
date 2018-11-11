@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+
+    <AssemblyOriginatorKeyFile Condition=" Exists('enyim.snk') ">enyim.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" Exists('..\enyim.snk') ">..\enyim.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" Exists('..\..\enyim.snk') ">..\..\enyim.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" Exists('..\..\..\enyim.snk') ">..\..\..\enyim.snk</AssemblyOriginatorKeyFile>
+
+    <SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+  </PropertyGroup>
+</Project>

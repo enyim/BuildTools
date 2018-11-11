@@ -1,0 +1,44 @@
+<Project>
+
+  <PropertyGroup>
+    <IsPackable Condition=" '$(IsTool)' != 'True' ">False</IsPackable>
+  </PropertyGroup>
+
+  <!--AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll"-->
+  <UsingTask TaskName="WriteTemplate"
+             TaskFactory="CodeTaskFactory"
+             AssemblyFile="$(RoslynCodeTaskFactory)"
+             Condition=" '$(RoslynCodeTaskFactory)' != '' "
+             >
+    <ParameterGroup>
+      <SourceFile ParameterType="System.String" Required="true" />
+      <Token ParameterType="System.String" />
+      <Replacement ParameterType="System.String" />
+      <TargetFile ParameterType="System.String" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="C#">
+        <![CDATA[
+          File.WriteAllText(TargetFile, File.ReadAllText(SourceFile).Replace(Token, Replacement));
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ProcessTargetsTemplate" BeforeTargets="ResolveReferences" Condition=" '$(RoslynCodeTaskFactory)' != '' ">
+    <ItemGroup>
+      <Filtered Include="@(None)" Condition=" '%(Filename)%(Extension)' == 'Runner.targets' " />
+    </ItemGroup>
+    <WriteTemplate Condition=" '@(Filtered)' != '' " SourceFile="%(Filtered.Identity)" Token="$id$" Replacement="$(MSBuildProjectName)" TargetFile="$(IntermediateOutputPath)\$(PackageId).targets" />
+    <ItemGroup Condition=" '@(Filtered)' != '' ">
+      <GeneratedTargets Include="$(IntermediateOutputPath)\$(PackageId).targets">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Link>$(PackageId).targets</Link>
+      </GeneratedTargets>
+      <None Include="@(GeneratedTargets)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

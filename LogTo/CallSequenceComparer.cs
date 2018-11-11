@@ -1,38 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Enyim.Build.Rewriters.EventSource
+namespace Enyim.Build.Rewriters.LogTo
 {
-	internal class RewriteInterfaceBasedEventSourceCalls : EventSourceRewriter
+	internal abstract class CallSequenceComparer : ISequenceComparer<CallCollector.CallInfo>
 	{
-		private readonly Dictionary<string, MethodDefinition> implMap;
-
-		public RewriteInterfaceBasedEventSourceCalls(IEnumerable<ImplementedEventSource> implementations) : base(implementations)
+		public bool IsConsecutive(CallCollector.CallInfo left, CallCollector.CallInfo right)
 		{
-			implMap = implementations
-						.OfType<InterfaceBasedEventSource>()
-						.SelectMany(ies => ies.Methods)
-						.ToDictionary(m => m.Old.ToString(), m => m.New);
+			var afterX = left.Call.Next;
+
+			// nopos between the two call do not matter
+			while (afterX != null && afterX.OpCode == OpCodes.Nop)
+				afterX = afterX.Next;
+
+			// there are no (meaningful) ops between the two calls, they can be potentially merged into the same sequence
+			return (afterX.Offset == right.StartsAt.Offset) && IsConsecutive(left.Call, right.Call);
 		}
 
-		public override Instruction MethodInstruction(MethodDefinition owner, Instruction instruction)
-		{
-			if (instruction.Is(OpCodes.Call, OpCodes.Callvirt))
-			{
-				var callSite = instruction.TargetMethod();
-
-				if (implMap.TryGetValue(callSite.ToString(), out var newMethod))
-				{
-					instruction.OpCode = OpCodes.Callvirt;
-					instruction.Operand = newMethod;
-				}
-			}
-
-			return instruction;
-		}
+		protected abstract bool IsConsecutive(Instruction left, Instruction right);
 	}
 }
 

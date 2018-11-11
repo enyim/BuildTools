@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <GlobalSuppressions>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\GlobalSuppressions.cs'))</GlobalSuppressions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(GlobalSuppressions)" Condition=" Exists('$(GlobalSuppressions)') ">
+      <Link>Shared\GlobalSuppressions.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>
