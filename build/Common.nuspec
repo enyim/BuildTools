@@ -17,11 +17,11 @@
 	</metadata>
 
 	<files>
-		<file src="$publishDir$\**" target="tools" exclude="**\*.targets;**\*.props"/>
+		<file src="$publishDir$**" target="tools" exclude="**\*.targets;**\*.props"/>
 		<!--<file src="$publishDir$\Runner.targets" target="build\$id$.targets" />
 		<file src="$publishDir$\Runner.props" target="build\$id$.props" />-->
 
-		<file src="$publishDir$\*.targets" target="build" />
-		<file src="$publishDir$\*.props" target="build" />
+		<file src="$publishDir$*.targets" target="build" />
+		<file src="$publishDir$*.props" target="build" />
 	</files>
 </package>

@@ -21,8 +21,8 @@
         licenseUrl=$(PackageLicenseUrl);
         version=$(PackageVersion);
         tags=$(PackageTags);
-        publishDir=$(_FullPublish.TrimEnd('\'));
-        projectDir=$(MSBuildProjectDirectory.TrimEnd('\'));
+        publishDir=$(_FullPublish);
+        projectDir=$(MSBuildProjectDirectory);
       </NuspecProperties>
     </PropertyGroup>
   </Target>
