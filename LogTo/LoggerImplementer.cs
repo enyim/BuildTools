@@ -24,7 +24,6 @@ namespace Enyim.Build.Rewriters.LogTo
 		{
 			if (!method.HasBody) return method;
 
-			TryDeclareExceptionsForLoggers(method);
 			var calls = callCollector.Collect(method, logDefinitionFactory.IsLogger);
 			if (calls.Length == 0) return method;
 
@@ -88,49 +87,6 @@ namespace Enyim.Build.Rewriters.LogTo
 				return false;
 			}
 		}
-
-		private void TryDeclareExceptionsForLoggers(MethodDefinition method)
-		{
-			return;
-
-			if (!method.Body.HasExceptionHandlers) return;
-
-			// in release builds if the LogTo.Error (or similar) immediately follows the catch(E) block
-			// the compiler will not declare a local variable for the exception (as the catch block already has it on stack)
-			// which messes up the call analyzer
-			// in these cases, we introduce a local variable for the exception
-			var calls = method.GetOpsOf(OpCodes.Call, OpCodes.Callvirt).Where(logDefinitionFactory.IsLogger).ToArray();
-
-			if (calls.Length > 0)
-			{
-				var ilp = method.Body.GetILProcessor();
-
-				var ehToFix = method.Body
-									.ExceptionHandlers
-									.Where(eh => eh.HandlerType == ExceptionHandlerType.Catch
-													&& calls.Any(c => eh.HandlerStart.Offset <= c.Offset
-																		&& c.Offset <= eh.HandlerEnd.Offset))
-									.ToArray();
-
-				foreach (var eh in ehToFix)
-				{
-					var local = new VariableDefinition(eh.CatchType);
-					method.Body.Variables.Add(local);
-
-					var stloc = Instruction.Create(OpCodes.Stloc, local);
-					var ldloc = Instruction.Create(OpCodes.Ldloc, local);
-
-					ilp.InsertBefore(eh.HandlerStart, stloc);
-					ilp.InsertBefore(eh.HandlerStart, ldloc);
-
-					eh.HandlerStart = stloc;
-					eh.TryEnd = stloc;
-				}
-
-				//method.Body.Optimize();
-			}
-		}
-
 	}
 }
 
